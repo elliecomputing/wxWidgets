@@ -103,7 +103,7 @@ bool wxEventLoopBase::ProcessIdle()
 
 bool wxEventLoopBase::Yield(bool onlyIfNeeded)
 {
-    if ( m_isInsideYield )
+    if ( wxThread::IsMain() && m_isInsideYield )
     {
         if ( !onlyIfNeeded )
         {

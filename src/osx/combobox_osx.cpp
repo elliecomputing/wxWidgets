@@ -132,6 +132,7 @@ void wxComboBox::DoDeleteOneItem(unsigned int n)
 {
     m_datas.RemoveAt(n);
     GetComboPeer()->RemoveItem(n);
+    m_datas.RemoveAt(n,1);
 }
 
 void wxComboBox::DoClear()

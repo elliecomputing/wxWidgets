@@ -531,7 +531,9 @@ MyFrame::MyFrame()
 #if USE_LOG_WINDOW
     wxMenuItem *item = new wxMenuItem(fileMenu, Menu_File_ClearLog,
                                       wxT("Clear &log\tCtrl-L"));
+#if wxUSE_OWNER_DRAWN || defined(__WXGTK__)
     item->SetBitmap(copy_xpm);
+#endif
     fileMenu->Append(item);
     fileMenu->AppendSeparator();
 #endif // USE_LOG_WINDOW
@@ -640,7 +642,6 @@ MyFrame::MyFrame()
     m_textctrl = new wxTextCtrl(this, wxID_ANY, wxEmptyString,
                                 wxDefaultPosition, wxDefaultSize,
                                 wxTE_MULTILINE);
-    m_textctrl->SetEditable(false);
 
     wxLog::DisableTimestamp();
     m_logOld = wxLog::SetActiveTarget(new wxLogTextCtrl(m_textctrl));

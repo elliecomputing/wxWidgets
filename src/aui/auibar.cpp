@@ -1618,12 +1618,14 @@ wxBitmap wxAuiToolBar::GetToolBitmap(int tool_id) const
     return tool->m_bitmap;
 }
 
-void wxAuiToolBar::SetToolBitmap(int tool_id, const wxBitmap& bitmap)
+void wxAuiToolBar::SetToolBitmap(int tool_id, const wxBitmap& bitmap, bool setGreyDisabledBitmap)
 {
     wxAuiToolBarItem* tool = FindTool(tool_id);
     if (tool)
     {
         tool->m_bitmap = bitmap;
+        if (setGreyDisabledBitmap)
+            tool->m_disabledBitmap = bitmap.ConvertToDisabled();
     }
 }
 

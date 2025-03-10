@@ -2561,6 +2561,10 @@ void wxAuiNotebook::OnTabDragMotion(wxAuiNotebookEvent& evt)
             dest_tabs->Refresh();
             m_lastDragX = pt.x;
 
+            // the move is on the fly and is not cancelable, we need to update
+            // 'm_tabs' on the fly as well
+            m_tabs.MovePage(src_tab, dest_idx);
+            m_curPage = dest_idx;
         }
 
         return;

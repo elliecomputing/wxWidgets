@@ -3,6 +3,7 @@
 // Purpose:     implementation of platform-independent wxAcceleratorEntry parts
 // Author:      Vadim Zeitlin
 // Created:     2007-05-05
+// RCS-ID:      $Id$
 // Copyright:   (c) 2007 Vadim Zeitlin <vadim@wxwindows.org>
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
@@ -181,6 +182,8 @@ wxAcceleratorEntry::ParseAccel(const wxString& text, int *flagsOut, int *keyOut)
         {
             if ( CompareAccelString(current, wxTRANSLATE("ctrl")) )
                 accelFlags |= wxACCEL_CTRL;
+            else if ( CompareAccelString(current, wxTRANSLATE("cmd")) )
+                accelFlags |= wxACCEL_CMD;
             else if ( CompareAccelString(current, wxTRANSLATE("alt")) )
                 accelFlags |= wxACCEL_ALT;
             else if ( CompareAccelString(current, wxTRANSLATE("shift")) )

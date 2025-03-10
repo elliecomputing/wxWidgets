@@ -178,12 +178,12 @@ void wxSplitterWindow::SetResizeCursor()
 void wxSplitterWindow::OnPaint(wxPaintEvent& WXUNUSED(event))
 {
     wxPaintDC dc(this);
-#ifdef __WXOSX__
-    // as subpanels might have a transparent background we must erase the background
-    // at least on OSX, otherwise traces of the sash will remain
-    // test with: splitter sample->replace right window
+
+    // if one at least of the sub-window is not opaque, clear
+    if (((m_windowOne && m_windowOne->HasTransparentBackground()) ||
+         (m_windowTwo && m_windowTwo->HasTransparentBackground())) &&
+         !HasTransparentBackground())
     dc.Clear();
-#endif
 
     DrawSash(dc);
 }
@@ -420,7 +420,8 @@ void wxSplitterWindow::OnSize(wxSizeEvent& event)
     }
     else
     {
-        wxFAIL_MSG(wxT("should have a top level parent!"));
+        // NO: components might contain splitters but have no top level parent
+        //wxFAIL_MSG(wxT("should have a top level parent!"));
 
         iconized = false;
     }

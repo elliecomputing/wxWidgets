@@ -5675,9 +5675,8 @@ msgid "RIGHT"
 msgstr "DROITE"
 
 #: ../src/common/accelcmn.cpp:327
-#, fuzzy
 msgid "RawCtrl+"
-msgstr "Ctrl-ctrl"
+msgstr "RawCtrl+"
 
 #: ../src/common/ffile.cpp:113 ../src/common/ffile.cpp:134
 #, c-format
@@ -6015,9 +6014,9 @@ msgstr "Plusieurs connexions actives trouvées, sélection unique aléatoire."
 
 #: ../src/common/accelcmn.cpp:324
 msgid "Shift+"
-msgstr "Majuscule+"
+msgstr "Maj+"
 
-#: ../src/generic/dirdlgg.cpp:170
+#: ../src/generic/dirdlgg.cpp:171
 msgid "Show &hidden directories"
 msgstr "Montrer les répertoires cac&hés"
 
@@ -8257,10 +8256,9 @@ msgstr "pt"
 msgid "px"
 msgstr "px"
 
-#: ../src/common/accelcmn.cpp:188
-#, fuzzy
+#: ../src/common/accelcmn.cpp:189
 msgid "rawctrl"
-msgstr "ctrl"
+msgstr "rawctrl"
 
 #: ../src/html/chm.cpp:333
 msgid "read error"

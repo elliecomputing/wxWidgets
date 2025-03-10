@@ -552,6 +552,8 @@ wxNSTextViewControl::wxNSTextViewControl( wxTextCtrl *wxPeer, WXWidget w )
     wxNSTextScrollView* sv = (wxNSTextScrollView*) w;
     m_scrollView = sv;
 
+    m_hasEditor = true;
+
     [m_scrollView setHasVerticalScroller:YES];
     [m_scrollView setHasHorizontalScroller:NO];
     // TODO Remove if no regression, this was causing automatic resizes of multi-line textfields when the tlw changed
@@ -948,8 +950,8 @@ void wxNSTextFieldControl::WriteText(const wxString& str)
     m_lastKeyDownEvent = formerEvent;
 }
 
-void wxNSTextFieldControl::controlAction(WXWidget WXUNUSED(slf),
-    void* WXUNUSED(_cmd), void *WXUNUSED(sender))
+void wxNSTextFieldControl::controlAction(WXWidget slf,
+    void* _cmd, void *sender)
 {
     wxWindow* wxpeer = (wxWindow*) GetWXPeer();
     if ( wxpeer && (wxpeer->GetWindowStyle() & wxTE_PROCESS_ENTER) )

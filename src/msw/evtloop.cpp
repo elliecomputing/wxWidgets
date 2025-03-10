@@ -171,6 +171,13 @@ void wxGUIEventLoop::ProcessMessage(WXMSG *msg)
     }
 }
 
+static bool wxDontCareAboutMessageInWorkerThread(const MSG &msg)
+{
+	if (msg.message == WM_USER+10000 || msg.message == 0) // wxWM_PROC_TERMINATED)
+		return true;
+	return false;
+}
+
 bool wxGUIEventLoop::Dispatch()
 {
     MSG msg;
@@ -178,9 +185,11 @@ bool wxGUIEventLoop::Dispatch()
         return false;
 
 #if wxUSE_THREADS
-    wxASSERT_MSG( wxThread::IsMain(),
+    wxASSERT_MSG( wxThread::IsMain() || wxDontCareAboutMessageInWorkerThread(msg),
                   wxT("only the main thread can process Windows messages") );
 
+    if (wxThread::IsMain())
+    {
     static bool s_hadGuiLock = true;
     static wxMsgList s_aSavedMessages;
 
@@ -225,6 +234,7 @@ bool wxGUIEventLoop::Dispatch()
             }
         }
     }
+    }
 #endif // wxUSE_THREADS
 
     ProcessMessage(&msg);
@@ -266,6 +276,31 @@ WX_DEFINE_OBJARRAY(wxMSGArray);
 
 bool wxGUIEventLoop::YieldFor(long eventsToProcess)
 {
+#if wxUSE_THREADS
+	bool inMainThread = wxThread::IsMain();
+	if (!inMainThread)
+	{
+        // don't care about eventsToProcess yet
+        wxASSERT(eventsToProcess == wxEVT_CATEGORY_ALL);
+
+		MSG msg;
+		while ( PeekMessage(&msg, (HWND)0, 0, 0, PM_REMOVE))
+		{
+            if (msg.message == WM_QUIT)
+            {
+                PostQuitMessage (msg.wParam);
+                break;
+            }
+            else
+            {
+			    DispatchMessage (&msg);
+            }
+		}
+		
+		return true;
+	}
+#endif // wxUSE_THREADS
+
     // set the flag and don't forget to reset it before returning
     m_isInsideYield = true;
     m_eventsToProcessInsideYield = eventsToProcess;

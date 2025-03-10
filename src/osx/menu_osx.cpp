@@ -708,31 +708,8 @@ void wxMenuBar::MacInstallMenuBar()
     
     // hide items in the apple menu that don't exist in the wx menubar
     
-    wxMenuItem* appleItem = NULL;
-    wxMenuItem* wxItem = NULL;
-
-    int menuid = wxApp::s_macAboutMenuItemId;
-    appleItem = m_appleMenu->FindItem(menuid);
-    wxItem = FindItem(menuid);
-    if ( appleItem != NULL )
-    {
-        if ( wxItem == NULL )
-            appleItem->GetPeer()->Hide();
-        else 
-            appleItem->SetItemLabel(wxItem->GetItemLabel());
-    }
-    
-    menuid = wxApp::s_macPreferencesMenuItemId;
-    appleItem = m_appleMenu->FindItem(menuid);
-    wxItem = FindItem(menuid);
-    if ( appleItem != NULL )
-    {
-        if ( wxItem == NULL )
-            appleItem->GetPeer()->Hide();
-        else 
-            appleItem->SetItemLabel(wxItem->GetItemLabel());
-    }
-    
+    MacRefreshBuiltinMenuItem (wxApp::s_macAboutMenuItemId);
+    MacRefreshBuiltinMenuItem (wxApp::s_macPreferencesMenuItemId);
         
 #if 0
 
@@ -909,6 +886,26 @@ void wxMenuBar::MacInstallMenuBar()
 #endif
 
     s_macInstalledMenuBar = this;
+}
+
+void wxMenuBar::MacRefreshInstalledMenuBarBuiltinMenu(int menuid)
+{
+    if (s_macInstalledMenuBar)
+        s_macInstalledMenuBar->MacRefreshBuiltinMenuItem (menuid);
+}
+
+void wxMenuBar::MacRefreshBuiltinMenuItem(int menuid)
+{
+    wxMenuItem* appleItem = m_appleMenu->FindItem(menuid);
+    wxMenuItem* wxItem = FindItem(menuid);
+
+    if ( appleItem != NULL )
+    {
+        if ( wxItem == NULL )
+            appleItem->GetPeer()->Hide();
+        else 
+            appleItem->SetItemLabel(wxItem->GetItemLabel());
+    }
 }
 
 void wxMenuBar::EnableTop(size_t pos, bool enable)

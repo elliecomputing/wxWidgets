@@ -1613,9 +1613,20 @@ const wxString& wxTranslations::GetUntranslatedString(const wxString& str)
 {
     wxLocaleUntranslatedStrings& strings = wxThreadInfo.untranslatedStrings;
 
-    wxLocaleUntranslatedStrings::iterator i = strings.find(str);
+    wxString str_without_prefix(str);
+    if (str.length() > 0 && *str.begin() == '{')
+    {
+        wxString::const_iterator  it(str.begin()+1);
+        while (it!=str.end() && *it != '}')
+            ++it;
+
+        if (it != str.end())
+            str_without_prefix = str.Mid((it+1)-str.begin());
+    }
+
+    wxLocaleUntranslatedStrings::iterator i = strings.find(str_without_prefix);
     if ( i == strings.end() )
-        return *strings.insert(str).first;
+        return *strings.insert(str_without_prefix).first;
 
     return *i;
 }

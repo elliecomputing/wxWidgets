@@ -15,7 +15,7 @@
     // the exception handler which should be called from the exception filter
     //
     // it calsl wxApp::OnFatalException() if possible
-    extern unsigned long wxGlobalSEHandler(EXCEPTION_POINTERS *pExcPtrs);
+    WXDLLIMPEXP_BASE unsigned long wxGlobalSEHandler(EXCEPTION_POINTERS *pExcPtrs);
 
     // helper macro for wxSEH_HANDLE
 #if defined(__BORLANDC__) || (defined(__VISUALC__) && (__VISUALC__ <= 1200))

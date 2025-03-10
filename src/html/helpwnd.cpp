@@ -927,6 +927,10 @@ bool wxHtmlHelpWindow::KeywordSearch(const wxString& keyword,
                 if (it)
                 {
                     m_HtmlWin->LoadPage(it->GetFullPath());
+                    m_HtmlWin->Highlight (wxHtmlSearchParameters()
+                        .Keyword(m_SearchText->GetLineText(0))
+                        .CaseSensitive(m_SearchCaseSensitive->GetValue())
+                        .WholeWord(m_SearchWholeWords->GetValue()));
                 }
                 break;
             }
@@ -1737,7 +1741,13 @@ void wxHtmlHelpWindow::OnSearchSel(wxCommandEvent& WXUNUSED(event))
     if (it)
     {
         if (!it->page.empty())
+        {
             m_HtmlWin->LoadPage(it->GetFullPath());
+            m_HtmlWin->Highlight (wxHtmlSearchParameters()
+                .Keyword(m_SearchText->GetLineText(0))
+                .CaseSensitive(m_SearchCaseSensitive->GetValue())
+                .WholeWord(m_SearchWholeWords->GetValue()));
+        }
     }
 }
 

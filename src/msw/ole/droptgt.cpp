@@ -338,6 +338,9 @@ STDMETHODIMP wxIDropTarget::Drop(IDataObject *pIDataSource,
 {
     wxLogTrace(wxTRACE_OleCalls, wxT("IDropTarget::Drop"));
 
+    // let's keep our self alive [OnData could well destroy this object!]
+    AddRef (); 
+
     // TODO I don't know why there is this parameter, but so far I assume
     //      that it's the same we've already got in DragEnter
     wxASSERT( m_pIDataObject == pIDataSource );
@@ -376,6 +379,9 @@ STDMETHODIMP wxIDropTarget::Drop(IDataObject *pIDataSource,
     // update drag image
     m_pTarget->MSWUpdateDragImageOnData(pt.x, pt.y,
                                         ConvertDragEffectToResult(*pdwEffect));
+
+    // release myself [may auto-delete here!]
+    Release();
 
     return S_OK;
 }

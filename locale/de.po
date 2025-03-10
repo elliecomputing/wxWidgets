@@ -8253,7 +8253,7 @@ msgstr "px"
 
 #: ../src/common/accelcmn.cpp:188
 msgid "rawctrl"
-msgstr "strg"
+msgstr "rawctrl"
 
 #: ../src/html/chm.cpp:333
 msgid "read error"

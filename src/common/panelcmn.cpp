@@ -4,6 +4,7 @@
 // Author:      Julian Smart, Robert Roebling, Vadim Zeitlin
 // Modified by:
 // Created:     04/01/98
+// RCS-ID:      $Id$
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -118,3 +119,13 @@ void wxPanelBase::InitDialog()
     event.SetEventObject(this);
     GetEventHandler()->ProcessEvent(event);
 }
+
+#if defined(__WXMAC__) || defined (__WXGTK__)
+
+bool wxPanel::HasTransparentBackground()
+{
+    return GetBackgroundStyle() != wxBG_STYLE_PAINT;
+}
+
+#endif
+

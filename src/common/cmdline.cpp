@@ -686,7 +686,14 @@ void wxCmdLineParser::AddUsageText(const wxString& text)
 
 bool wxCmdLineParser::Found(const wxString& name) const
 {
-    return FoundSwitch(name) != wxCMD_SWITCH_NOT_FOUND;
+    int i = m_data->FindOption(name);
+    if ( i == wxNOT_FOUND )
+        i = m_data->FindOptionByLongName(name);
+
+    wxCHECK_MSG( i != wxNOT_FOUND, false, wxT("unknown option") );
+
+    const wxCmdLineOption& opt = m_data->m_options[(size_t)i];
+    return opt.HasValue();
 }
 
 wxCmdLineSwitchState wxCmdLineParser::FoundSwitch(const wxString& name) const

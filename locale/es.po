@@ -1281,9 +1281,8 @@ msgid "Already dialling ISP."
 msgstr "Llamando al ISP"
 
 #: ../src/common/accelcmn.cpp:320 ../src/univ/themes/win32.cpp:3756
-#, fuzzy
 msgid "Alt+"
-msgstr "Alt-"
+msgstr "Alt+"
 
 #: ../src/common/debugrpt.cpp:581
 #, fuzzy
@@ -2538,9 +2537,8 @@ msgid "Create new directory"
 msgstr "Crear nuevo directorio"
 
 #: ../src/common/accelcmn.cpp:322
-#, fuzzy
 msgid "Ctrl+"
-msgstr "Ctrl-"
+msgstr "Ctrl+"
 
 #: ../src/richtext/richtextctrl.cpp:325 ../src/osx/textctrl_osx.cpp:582
 #: ../src/common/stockitem.cpp:151 ../src/msw/textctrl.cpp:2283
@@ -5817,10 +5815,9 @@ msgstr "RETURN"
 msgid "RIGHT"
 msgstr "DERECHA"
 
-#: ../src/common/accelcmn.cpp:327
-#, fuzzy
+#: ../src/common/accelcmn.cpp:318
 msgid "RawCtrl+"
-msgstr "Ctrl-"
+msgstr "RawCtrl+"
 
 #: ../src/common/ffile.cpp:113 ../src/common/ffile.cpp:134
 #, c-format
@@ -6165,10 +6162,9 @@ msgid "Several active dialup connections found, choosing one randomly."
 msgstr ""
 "Se han encontrado varias conexiones activas, eligiendo una aleatoriamente."
 
-#: ../src/common/accelcmn.cpp:324
-#, fuzzy
+#: ../src/common/accelcmn.cpp:315
 msgid "Shift+"
-msgstr "Mayúsculas-"
+msgstr "Mayús+"
 
 #: ../src/generic/dirdlgg.cpp:170
 msgid "Show &hidden directories"
@@ -8463,10 +8459,9 @@ msgstr ""
 msgid "px"
 msgstr ""
 
-#: ../src/common/accelcmn.cpp:188
-#, fuzzy
+#: ../src/common/accelcmn.cpp:189
 msgid "rawctrl"
-msgstr "ctrl"
+msgstr "rawctrl"
 
 #: ../src/html/chm.cpp:333
 msgid "read error"
@@ -8504,7 +8499,7 @@ msgstr "séptimo"
 
 #: ../src/common/accelcmn.cpp:186
 msgid "shift"
-msgstr "mayúsculas"
+msgstr "mayús"
 
 #: ../src/common/appbase.cpp:685
 msgid "show this help message"

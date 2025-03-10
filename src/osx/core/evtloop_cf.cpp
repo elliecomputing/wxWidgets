@@ -191,6 +191,7 @@ bool wxCFEventLoop::YieldFor(long eventsToProcess)
     // possibly sending events in the thread too.
     if ( !wxThread::IsMain() )
     {
+        wxCFEventLoop::DoDispatchTimeout(0);
         return true;
     }
 #endif // wxUSE_THREADS
@@ -280,6 +281,9 @@ int wxCFEventLoop::DoDispatchTimeout(unsigned long timeout)
     switch( status )
     {
         case kCFRunLoopRunFinished:
+            // In worker thread, it's normal, as there may be no event source
+            // to serve at all
+            if (wxThread::IsMain())
             wxFAIL_MSG( "incorrect run loop state" );
             break;
         case kCFRunLoopRunStopped:
@@ -308,8 +312,10 @@ void wxCFEventLoop::OSXDoRun()
         // Pending() returns true, do process them
         if ( m_shouldExit )
         {
+            m_isInsideYield = true;
             while ( DoProcessEvents() == 1 )
                 ;
+            m_isInsideYield = false;
 
             break;
         }

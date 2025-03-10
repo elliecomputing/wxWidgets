@@ -152,7 +152,7 @@ public:
     @library{wxhtml}
     @category{html}
 
-    @see wxHtmlLinkEvent, wxHtmlCellEvent
+    @see wxHtmlLinkEvent, wxHtmlCellEvent, wxHtmlSearchParameters
 */
 class wxHtmlWindow : public wxScrolledWindow, public wxHtmlWindowInterface
 {
@@ -192,6 +192,13 @@ public:
     bool AppendToPage(const wxString& source);
 
     /**
+        Disables highlighting.
+
+        @see Highlight ()
+    */
+    void DisableHighlight ();
+
+    /**
         Returns pointer to the top-level container.
 
         @see @ref overview_html_cells, @ref overview_printing
@@ -222,6 +229,13 @@ public:
         Returns the related frame.
     */
     wxFrame* GetRelatedFrame() const;
+
+    /**
+        Highlights the text matching @search_parameters.
+
+        @see DisableHighlight()
+    */
+    void Highlight(const wxHtmlSearchParameters &search_parameters);
 
     /**
         Moves back to the previous page. Only pages displayed using LoadPage()
@@ -568,7 +582,49 @@ public:
     const wxHtmlLinkInfo& GetLinkInfo() const;
 };
 
+/**
+    @struct wxHtmlSearchParameters
 
+    This structure is used to describe which text to search and highlight.
+    It contains the usual case sensitiveness, whole word flags and the text to
+    search.
+
+    You can initialize it with a functional approach such as:
+        wxHtmlSearchParameters().Keyword("word").CaseSensitive(true)
+
+    @library{wxhtml}
+    @category{html}
+
+    @see wxHtmlWindow::Highlight()
+
+    @since 2.9.2
+*/
+struct wxHtmlSearchParameters
+{
+    wxString m_keyword;
+    bool m_caseSensitive;
+    bool m_wholeWord;
+
+    /**
+        Sets up default parameters: case insensitive and not whole word.
+    */
+    wxHtmlSearchParameters();
+
+    /**
+        Sets case sensitiveness to @caseSensitive
+    */
+    wxHtmlSearchParameters& CaseSensitive(bool caseSensitive);
+
+    /**
+        Sets whole word matching to @wholeWord
+    */
+    wxHtmlSearchParameters& WholeWord(bool wholeWord);
+
+    /**
+        Sets the keyword to @keyword
+    */
+    wxHtmlSearchParameters& Keyword(const wxString &keyword);
+};
 
 /**
     @class wxHtmlCellEvent

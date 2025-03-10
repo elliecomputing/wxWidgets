@@ -17,7 +17,7 @@
 #include "wx/html/htmltag.h"
 #include "wx/html/htmldefs.h"
 #include "wx/window.h"
-
+#include "wx/vector.h"
 
 class WXDLLIMPEXP_FWD_HTML wxHtmlWindowInterface;
 class WXDLLIMPEXP_FWD_HTML wxHtmlLinkInfo;
@@ -39,6 +39,10 @@ public:
     // this version is used for the user selection defined with the mouse
     void Set(const wxPoint& fromPos, const wxHtmlCell *fromCell,
              const wxPoint& toPos, const wxHtmlCell *toCell);
+    // this version is used for the search highlights for which character
+    //  coordinates are known but not their positions in pixels
+    void Set(wxCoord fromCharacterPos, const wxHtmlCell *fromCell,
+             wxCoord toCharacterPos, const wxHtmlCell *toCell);
     void Set(const wxHtmlCell *fromCell, const wxHtmlCell *toCell);
 
     const wxHtmlCell *GetFromCell() const { return m_fromCell; }
@@ -67,7 +71,7 @@ private:
     const wxHtmlCell *m_fromCell, *m_toCell;
 };
 
-
+typedef wxVector<wxHtmlSelection> wxHtmlHighlights;
 
 enum wxHtmlSelectionState
 {
@@ -78,13 +82,45 @@ enum wxHtmlSelectionState
 
 // Selection state is passed to wxHtmlCell::Draw so that it can render itself
 // differently e.g. when inside text selection or outside it.
+// In addition the highlight state indicates whether to render in highlighted
+//  state.
+// NB: When selection state is wxHTML_SEL_IN, highlight state is ignored.
 class WXDLLIMPEXP_HTML wxHtmlRenderingState
 {
 public:
-    wxHtmlRenderingState() : m_selState(wxHTML_SEL_OUT) {}
+
+    enum wxDcSetupFor
+    {
+        Highlight,
+        Selection,
+        NormalState
+    };
+
+    wxHtmlRenderingState() : m_selState(wxHTML_SEL_OUT),
+        m_highlightState(wxHTML_SEL_OUT), m_dcSetupFor(NormalState) {}
 
     void SetSelectionState(wxHtmlSelectionState s) { m_selState = s; }
     wxHtmlSelectionState GetSelectionState() const { return m_selState; }
+
+    void SetHighlightState(wxHtmlSelectionState s) { m_highlightState = s; }
+    wxHtmlSelectionState GetHighlightState() const { return m_highlightState; }
+
+    // Set the current highlight to check for intersection with a text cell.
+    // This variable is used during UpdateRenderingStatePost and
+    //  wxHtmlWordCell::Draw to maintain linear rendering time.
+    void SetCurrentHighlight(const wxHtmlHighlights::const_iterator &at) {
+        m_currentHighlight = at;
+    }
+    wxHtmlHighlights::const_iterator GetCurrentHighlight() const {
+        return m_currentHighlight;
+    }
+
+    // Each time the renderer enters an highlighted or selected section, or
+    //  switch back to normal state, it tests whether the DC is already set up
+    //  with IsDcSetupFor, if it needs to actually set up the DC it calls as
+    //  well SetDcSetupFor (used by SwitchToHighlightAndSelState).
+    void SetDcSetupFor (wxDcSetupFor newState) { m_dcSetupFor = newState; }
+    bool IsDcSetupFor(wxDcSetupFor testState) const { return m_dcSetupFor == testState; }
 
     void SetFgColour(const wxColour& c) { m_fgColour = c; }
     const wxColour& GetFgColour() const { return m_fgColour; }
@@ -95,6 +131,9 @@ public:
 
 private:
     wxHtmlSelectionState  m_selState;
+    wxHtmlSelectionState  m_highlightState;
+    wxDcSetupFor          m_dcSetupFor;
+    wxHtmlHighlights::const_iterator m_currentHighlight;
     wxColour              m_fgColour, m_bgColour;
     int                   m_bgMode;
 };
@@ -108,6 +147,8 @@ public:
     virtual ~wxHtmlRenderingStyle() {}
     virtual wxColour GetSelectedTextColour(const wxColour& clr) = 0;
     virtual wxColour GetSelectedTextBgColour(const wxColour& clr) = 0;
+    virtual wxColour GetHighlightedTextColour(const wxColour& clr) = 0;
+    virtual wxColour GetHighlightedTextBgColour(const wxColour& clr) = 0;
 };
 
 // Standard style:
@@ -116,6 +157,8 @@ class WXDLLIMPEXP_HTML wxDefaultHtmlRenderingStyle : public wxHtmlRenderingStyle
 public:
     virtual wxColour GetSelectedTextColour(const wxColour& clr);
     virtual wxColour GetSelectedTextBgColour(const wxColour& clr);
+    virtual wxColour GetHighlightedTextColour(const wxColour& clr);
+    virtual wxColour GetHighlightedTextBgColour(const wxColour& clr);
 };
 
 
@@ -130,6 +173,9 @@ public:
     void SetSelection(wxHtmlSelection *s) { m_selection = s; }
     wxHtmlSelection *GetSelection() const { return m_selection; }
 
+    void SetHighlightList(wxHtmlHighlights *highlightList);
+    wxHtmlHighlights *GetHighlightList() const { return m_highlightList; }
+
     void SetStyle(wxHtmlRenderingStyle *style) { m_style = style; }
     wxHtmlRenderingStyle& GetStyle() { return *m_style; }
 
@@ -137,6 +183,7 @@ public:
 
 protected:
     wxHtmlSelection      *m_selection;
+    wxHtmlHighlights  *m_highlightList;
     wxHtmlRenderingStyle *m_style;
     wxHtmlRenderingState m_state;
 };

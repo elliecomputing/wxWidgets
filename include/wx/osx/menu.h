@@ -154,6 +154,7 @@ public:
     static bool GetAutoWindowMenu() { return s_macAutoWindowMenu ; }
 
     void MacInstallMenuBar() ;
+    static void MacRefreshInstalledMenuBarBuiltinMenu(int menuid);
     static wxMenuBar* MacGetInstalledMenuBar() { return s_macInstalledMenuBar ; }
     static void MacSetCommonMenuBar(wxMenuBar* menubar) { s_macCommonMenuBar=menubar; }
     static wxMenuBar* MacGetCommonMenuBar() { return s_macCommonMenuBar; }
@@ -168,6 +169,8 @@ protected:
     static WXHMENU  s_macWindowMenuHandle ;
 
 private:
+    void MacRefreshBuiltinMenuItem(int menuid);
+
     static wxMenuBar*            s_macInstalledMenuBar ;
     static wxMenuBar*            s_macCommonMenuBar ;
 

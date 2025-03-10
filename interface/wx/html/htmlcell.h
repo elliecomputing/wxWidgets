@@ -105,6 +105,17 @@ public:
         Returns the colour to use for the selected text's background.
     */
     virtual wxColour GetSelectedTextBgColour(const wxColour& clr) = 0;
+
+    /**
+        Returns the colour to use for the highlighted text.
+    */
+    virtual wxColour GetHighlightedTextColour(const wxColour& clr) = 0;
+
+    /**
+        Returns the colour to use for the highlighted text's background.
+    */
+    virtual wxColour GetHighlightedTextBgColour(const wxColour& clr) = 0;
+
 };
 
 
@@ -134,6 +145,9 @@ public:
     */
     void SetSelection(wxHtmlSelection *s);
     wxHtmlSelection *GetSelection() const;
+
+    void SetHighlightList(wxHtmlHighlightList *highlightList);
+    wxHtmlHighlightList *GetHighlightList() const;
 
     void SetStyle(wxHtmlRenderingStyle *style);
     wxHtmlRenderingStyle& GetStyle();

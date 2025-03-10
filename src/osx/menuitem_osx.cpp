@@ -212,6 +212,14 @@ void wxMenuItem::UpdateItemText()
     wxAcceleratorEntry *entry = wxAcceleratorEntry::Create( m_text ) ;
     GetPeer()->SetLabel( text, entry );
     delete entry ;
+
+    // ensure that builtin menu item are well synchronized...
+    if (GetId() == wxApp::s_macPreferencesMenuItemId
+        || GetId() == wxApp::s_macExitMenuItemId
+        || GetId() == wxApp::s_macAboutMenuItemId)
+    {
+        wxMenuBar::MacRefreshInstalledMenuBarBuiltinMenu(GetId());
+    }
 }
 
 // radio group stuff

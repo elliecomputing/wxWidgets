@@ -4,6 +4,7 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     22.06.2003
+// RCS-ID:      $Id$
 // Copyright:   (c) 2003 Vadim Zeitlin <vadim@wxwindows.org>
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
@@ -67,7 +68,10 @@ void wxConsoleAppTraits::AfterChildWaitLoop(void * WXUNUSED(data))
 #if wxUSE_THREADS
 bool wxConsoleAppTraits::DoMessageFromThreadWait()
 {
-    // nothing to process here
+    // in console mode we simply get rid of all messages when waiting, failing 
+    //  to do so might block the application
+	MSG msg;
+	while (::PeekMessage(&msg, 0, 0, 0, PM_REMOVE));
     return true;
 }
 

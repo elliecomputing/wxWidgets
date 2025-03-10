@@ -8277,7 +8277,7 @@ msgstr "sette"
 
 #: ../src/common/accelcmn.cpp:186
 msgid "shift"
-msgstr "shift"
+msgstr "maiusc"
 
 #: ../src/common/appbase.cpp:685
 msgid "show this help message"

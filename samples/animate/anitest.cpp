@@ -4,6 +4,7 @@
 // Author:      Julian Smart
 // Modified by: Francesco Montorsi
 // Created:     02/07/2001
+// RCS-ID:      $Id$
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -42,6 +43,10 @@
     #error Cannot compile this sample if wxAnimationCtrl is not enabled
 #endif
 
+#if wxUSE_FILESYSTEM
+    #include "wx/filesys.h"
+    #include "wx/fs_arc.h"
+#endif
 
 IMPLEMENT_APP(MyApp)
 
@@ -93,6 +98,10 @@ bool MyApp::OnInit()
 {
     if ( !wxApp::OnInit() )
         return false;
+
+#if wxUSE_FILESYSTEM
+    wxFileSystem::AddHandler(new wxArchiveFSHandler);
+#endif
 
     // Create the main frame window
 
@@ -291,7 +300,11 @@ void MyFrame::OnOpen(wxCommandEvent& WXUNUSED(event))
         m_animationCtrl->SetAnimation(temp);
         m_animationCtrl->Play();
     #else
+#if wxUSE_FILESYSTEM
+        wxFSInputStream stream(filename);
+#else
         wxFileInputStream stream(filename);
+#endif
         if (!stream.IsOk())
         {
             wxLogError(wxT("Sorry, this animation is not a valid format for wxAnimation."));

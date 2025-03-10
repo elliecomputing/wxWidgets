@@ -589,7 +589,7 @@ public:
     void SetToolLabel(int toolId, const wxString& label);
 
     wxBitmap GetToolBitmap(int toolId) const;
-    void SetToolBitmap(int toolId, const wxBitmap& bitmap);
+    void SetToolBitmap(int toolId, const wxBitmap& bitmap, bool setGreyDisabledBitmap = true);
 
     wxString GetToolShortHelp(int toolId) const;
     void SetToolShortHelp(int toolId, const wxString& helpString);

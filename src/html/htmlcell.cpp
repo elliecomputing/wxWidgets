@@ -40,6 +40,20 @@ void wxHtmlSelection::Set(const wxPoint& fromPos, const wxHtmlCell *fromCell,
     m_toCell = toCell;
     m_fromPos = fromPos;
     m_toPos = toPos;
+
+    // from/toPos changed, invalidate character positions so that they get
+    //  computed again during next paint
+    ClearFromToCharacterPos ();
+}
+
+void wxHtmlSelection::Set(wxCoord fromCharacterPos, const wxHtmlCell *fromCell,
+                          wxCoord toCharacterPos, const wxHtmlCell *toCell)
+{
+    m_fromCell = fromCell;
+    m_toCell = toCell;
+    m_fromCharacterPos = fromCharacterPos;
+    m_toCharacterPos = toCharacterPos;
+    m_toPos = m_fromPos = wxDefaultPosition;
 }
 
 void wxHtmlSelection::Set(const wxHtmlCell *fromCell, const wxHtmlCell *toCell)
@@ -54,18 +68,43 @@ void wxHtmlSelection::Set(const wxHtmlCell *fromCell, const wxHtmlCell *toCell)
     Set(p1, fromCell, p2, toCell);
 }
 
-wxColour
-wxDefaultHtmlRenderingStyle::
-GetSelectedTextColour(const wxColour& WXUNUSED(clr))
+//-----------------------------------------------------------------------------
+// wxDefaultHtmlRenderingStyle
+//-----------------------------------------------------------------------------
+
+wxColour wxDefaultHtmlRenderingStyle::GetSelectedTextColour(
+    const wxColour& WXUNUSED(clr))
 {
     return wxSystemSettings::GetColour(wxSYS_COLOUR_HIGHLIGHTTEXT);
 }
 
-wxColour
-wxDefaultHtmlRenderingStyle::
-GetSelectedTextBgColour(const wxColour& WXUNUSED(clr))
+wxColour wxDefaultHtmlRenderingStyle::GetSelectedTextBgColour(
+    const wxColour& WXUNUSED(clr))
 {
     return wxSystemSettings::GetColour(wxSYS_COLOUR_HIGHLIGHT);
+}
+
+wxColour wxDefaultHtmlRenderingStyle::GetHighlightedTextColour(
+    const wxColour& clr)
+{
+    return clr;
+}
+
+wxColour wxDefaultHtmlRenderingStyle::GetHighlightedTextBgColour(
+    const wxColour& WXUNUSED(clr))
+{
+    return *wxYELLOW;
+}
+
+//-----------------------------------------------------------------------------
+// wxHtmlRenderingInfo
+//-----------------------------------------------------------------------------
+
+void wxHtmlRenderingInfo::SetHighlightList(wxHtmlHighlights *highlightList)
+{
+    m_highlightList = highlightList;
+    if (highlightList)
+        m_state.SetCurrentHighlight (highlightList->begin());
 }
 
 
@@ -424,18 +463,33 @@ void wxHtmlWordCell::SetSelectionPrivPos(const wxDC& dc, wxHtmlSelection *s) con
 }
 
 
-static void SwitchSelState(wxDC& dc, wxHtmlRenderingInfo& info,
-                           bool toSelection)
+static void SwitchHighlightAndSelState(wxDC& dc, wxHtmlRenderingInfo& info,
+                           bool toSelection, bool toHighlighted)
 {
+    if ((toSelection && info.GetState().IsDcSetupFor(wxHtmlRenderingState::Selection)) ||
+        (!toSelection && toHighlighted && info.GetState().IsDcSetupFor(wxHtmlRenderingState::Highlight)) ||
+        (!toSelection && !toHighlighted && info.GetState().IsDcSetupFor(wxHtmlRenderingState::NormalState)))
+        return; // nothing to do
+
     wxColour fg = info.GetState().GetFgColour();
     wxColour bg = info.GetState().GetBgColour();
 
-    if ( toSelection )
+    if ( toSelection )  // selection has priority over highlighted
     {
         dc.SetBackgroundMode(wxSOLID);
         dc.SetTextForeground(info.GetStyle().GetSelectedTextColour(fg));
         dc.SetTextBackground(info.GetStyle().GetSelectedTextBgColour(bg));
         dc.SetBackground(info.GetStyle().GetSelectedTextBgColour(bg));
+        info.GetState().SetDcSetupFor(wxHtmlRenderingState::Selection);
+    }
+    else if ( toHighlighted )
+    {
+        dc.SetBackgroundMode(wxBRUSHSTYLE_SOLID);
+        dc.SetTextForeground(info.GetStyle().GetHighlightedTextColour(fg));
+        dc.SetTextBackground(info.GetStyle().GetHighlightedTextBgColour(bg));
+        dc.SetBackground(wxBrush(info.GetStyle().GetHighlightedTextBgColour(bg),
+                                    wxBRUSHSTYLE_SOLID));
+        info.GetState().SetDcSetupFor(wxHtmlRenderingState::Highlight);
     }
     else
     {
@@ -444,7 +498,9 @@ static void SwitchSelState(wxDC& dc, wxHtmlRenderingInfo& info,
         dc.SetTextForeground(fg);
         dc.SetTextBackground(bg);
         if ( mode != wxTRANSPARENT )
-            dc.SetBackground(bg);
+            dc.SetBackground(wxBrush(bg));
+
+        info.GetState().SetDcSetupFor(wxHtmlRenderingState::NormalState);
     }
 }
 
@@ -458,15 +514,29 @@ void wxHtmlWordCell::Draw(wxDC& dc, int x, int y,
     dc.DrawRectangle(x+m_PosX,y+m_PosY,m_Width /* VZ: +1? */ ,m_Height);
 #endif
 
-    bool drawSelectionAfterCell = false;
+    // order in this enum is important and allows the natural progression
+    //  from Start to End and then after the end.
+    enum RoleInRange {
+        Start = 0,
+        End = 1,
+        AfterEnd = 2
+    };
+
+    // We use the rendering info to determine how to cut the cell into one or
+    //  more slices, each with a given background colour, selection is
+    //  prevalent.
+    // The match and selections states informs us about how hard it will be
+    //  to do the mix.
+    // We use a sorted approach and then qualify each segment to know which
+    //  color it actually uses.
+
+    // First of all, ensure the selection bounds are well known if they are
+    //  going to be used
 
     if ( info.GetState().GetSelectionState() == wxHTML_SEL_CHANGING )
     {
         // Selection changing, we must draw the word piecewise:
         wxHtmlSelection *s = info.GetSelection();
-        wxString txt;
-        int w, h;
-        int ofs = 0;
 
         // NB: this is quite a hack: in order to compute selection boundaries
         //     (in word's characters) we must know current font, which is only
@@ -477,41 +547,137 @@ void wxHtmlWordCell::Draw(wxDC& dc, int x, int y,
         {
             SetSelectionPrivPos(dc, s);
         }
+    }
 
-        int part1 = s->GetFromCell()==this ? s->GetFromCharacterPos() : 0;
-        int part2 = s->GetToCell()==this   ? s->GetToCharacterPos()   : m_Word.Length();
+    // We have now positions for sure for the matches and selection (there might
+    //  be several matches in a single word), matches are already ordered.
+    // We iterate over the match and selection and determine what is state 'after'
+    //  so as to color correctly the space between this cell and a potential
+    //  consecutive cell.
+    wxHtmlSelectionState selstate = info.GetState().GetSelectionState();
+    wxHtmlSelectionState highlightstate = info.GetState().GetHighlightState();
 
-        if ( part1 > 0 )
+    if ( selstate == wxHTML_SEL_CHANGING ||
+        (highlightstate == wxHTML_SEL_CHANGING && selstate != wxHTML_SEL_IN) )
+    {
+        // current cell is either on start or end of itm->GetFrom/ToPos if changing.
+        wxHtmlHighlights::const_iterator itm = info.GetState().GetCurrentHighlight();
+        const wxHtmlSelection *selection = info.GetSelection();
+
+        // Note that when reaching AfterEnd, we accept to go into next
+        //  match if the FromCell is still current cell
+        unsigned next_selection_limit =  selstate == wxHTML_SEL_CHANGING
+                ? (this==selection->GetFromCell() ? Start : End)
+                : AfterEnd;
+        unsigned next_highlight_limit = highlightstate != wxHTML_SEL_OUT
+                ? (this==(*itm).GetFromCell() ? Start : End)
+                : AfterEnd;
+
+        wxString txt;
+        unsigned remain_pos = 0;
+        int w, h;
+        int ofs = 0;
+
+        // We need to interleave selection and match bounds to determine what
+        //  is the next state change, rendering the few character in between
+        //  until we reach the end of the cell.
+        // NB: Each time we pass from a Start to End limit we enter the state,
+        //  End to AfterEnd we leave.
+        // We'll make a last pass on the end position to ensure we switch the DC
+        //  to the right state.
+        bool last_loop_passed = false;
+        while (remain_pos <= m_Word.length() && !last_loop_passed)
         {
-            txt = m_Word.Mid(0, part1);
-            dc.DrawText(txt, x + m_PosX, y + m_PosY);
-            dc.GetTextExtent(txt, &w, &h);
-            ofs += w;
+            last_loop_passed = remain_pos == m_Word.length();
+
+            const unsigned after_anything = (unsigned)-1;
+            unsigned next_sel_pos = after_anything;
+            switch (next_selection_limit)
+            {
+            case Start:
+                next_sel_pos = selection->GetFromCharacterPos();
+                break;
+
+            case End:
+                if (this==selection->GetToCell())
+                    next_sel_pos = selection->GetToCharacterPos();
+                else
+                    next_sel_pos = m_Word.length();
+                break;
+
+            case AfterEnd:
+                next_sel_pos = after_anything;
+                break;
         }
 
-        SwitchSelState(dc, info, true);
+            unsigned next_highlight_pos = after_anything;
+            switch (next_highlight_limit)
+            {
+            case Start:
+                next_highlight_pos = (*itm).GetFromCharacterPos();
+                break;
 
-        txt = m_Word.Mid(part1, part2-part1);
-        dc.DrawText(txt, ofs + x + m_PosX, y + m_PosY);
+            case End:
+                if (this==(*itm).GetToCell())
+                    next_highlight_pos = (*itm).GetToCharacterPos();
+                else
+                    next_highlight_pos = m_Word.length();
+                break;
 
-        if ( (size_t)part2 < m_Word.length() )
-        {
+            case AfterEnd:
+                next_highlight_pos = after_anything;
+                break;
+            }
+
+            bool sel_change_first = next_sel_pos < next_highlight_pos;
+            unsigned next_change_pos =
+                sel_change_first ? next_sel_pos : next_highlight_pos;
+
+            SwitchHighlightAndSelState (dc, info, next_selection_limit==1,
+                next_highlight_limit==1);
+            txt = m_Word.Mid (remain_pos, wxMin(m_Word.length()-remain_pos,
+                next_change_pos - remain_pos));
+
+            if (!txt.empty())
+            {
+                dc.DrawText(txt, x + ofs + m_PosX, y + m_PosY);
             dc.GetTextExtent(txt, &w, &h);
             ofs += w;
-            SwitchSelState(dc, info, false);
-            txt = m_Word.Mid(part2);
-            dc.DrawText(txt, ofs + x + m_PosX, y + m_PosY);
+
+                remain_pos += txt.length();
+            }
+
+            if (next_change_pos==after_anything)
+                break; // leave, all changes are AFTER the end of cell
+
+            if (next_change_pos==next_sel_pos)
+                ++next_selection_limit;
+
+            if (next_change_pos==next_highlight_pos)
+            {
+                ++next_highlight_limit;
+
+                wxHtmlHighlights::const_iterator itm_next = itm;
+                ++itm_next;
+
+                if (next_highlight_limit==AfterEnd &&
+                    itm_next!=info.GetHighlightList()->end() &&
+                    (*itm_next).GetFromCell() == this)
+                {
+                    next_highlight_limit = Start;
+                    itm = itm_next;
+                    info.GetState().SetCurrentHighlight (itm_next);
+                }
+            }
         }
-        else
-            drawSelectionAfterCell = true;
     }
     else
     {
-        wxHtmlSelectionState selstate = info.GetState().GetSelectionState();
         // Not changing selection state, draw the word in single mode:
-        SwitchSelState(dc, info, selstate != wxHTML_SEL_OUT);
+        SwitchHighlightAndSelState (dc, info, selstate==wxHTML_SEL_IN,
+            highlightstate==wxHTML_SEL_IN);
+
         dc.DrawText(m_Word, x + m_PosX, y + m_PosY);
-        drawSelectionAfterCell = (selstate != wxHTML_SEL_OUT);
     }
 
     // NB: If the text is justified then there is usually some free space
@@ -520,7 +686,7 @@ void wxHtmlWordCell::Draw(wxDC& dc, int x, int y,
     //     this special case and renders the selection *outside* the sell,
     //     too.
     if ( m_Parent->GetAlignHor() == wxHTML_ALIGN_JUSTIFY &&
-         drawSelectionAfterCell )
+         !info.GetState().IsDcSetupFor(wxHtmlRenderingState::NormalState) )
     {
         wxHtmlCell *nextCell = m_Next;
         while ( nextCell && nextCell->IsFormattingCell() )
@@ -999,10 +1165,21 @@ void wxHtmlContainerCell::UpdateRenderingStatePre(wxHtmlRenderingInfo& info,
                                                   wxHtmlCell *cell) const
 {
     wxHtmlSelection *s = info.GetSelection();
-    if (!s) return;
+    if (s)
+    {
     if (s->GetFromCell() == cell || s->GetToCell() == cell)
     {
         info.GetState().SetSelectionState(wxHTML_SEL_CHANGING);
+    }
+}
+
+    wxHtmlHighlights::const_iterator itm = info.GetState().GetCurrentHighlight();
+    if (info.GetHighlightList() && itm != info.GetHighlightList()->end())
+    {
+        if ((*itm).GetFromCell() == cell || (*itm).GetToCell() == cell)
+        {
+            info.GetState().SetHighlightState (wxHTML_SEL_CHANGING);
+        }
     }
 }
 
@@ -1010,11 +1187,31 @@ void wxHtmlContainerCell::UpdateRenderingStatePost(wxHtmlRenderingInfo& info,
                                                    wxHtmlCell *cell) const
 {
     wxHtmlSelection *s = info.GetSelection();
-    if (!s) return;
+    if (s)
+    {
     if (s->GetToCell() == cell)
         info.GetState().SetSelectionState(wxHTML_SEL_OUT);
     else if (s->GetFromCell() == cell)
         info.GetState().SetSelectionState(wxHTML_SEL_IN);
+}
+
+    wxHtmlHighlights::const_iterator itm = info.GetState().GetCurrentHighlight();
+    if (info.GetHighlightList() && itm != info.GetHighlightList()->end())
+    {
+        if ((*itm).GetToCell() == cell)
+        {
+            info.GetState().SetHighlightState(wxHTML_SEL_OUT);
+
+            // many match in single cell, jump all
+            while (itm != info.GetHighlightList()->end() && (*itm).GetToCell() == cell)
+                ++itm;  // move to next match in list
+
+            info.GetState().SetCurrentHighlight (itm);
+        }
+        else if ((*itm).GetFromCell() == cell)
+            info.GetState().SetHighlightState(wxHTML_SEL_IN);
+
+    }
 }
 
 #define mMin(a, b) (((a) < (b)) ? (a) : (b))

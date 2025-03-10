@@ -284,6 +284,12 @@ protected:
 
         event.Skip();
     }
+    void OnFocusLost(wxFocusEvent& event)
+    {
+        wxLogMessage(wxT("MyComboBox::OnFocusLost"));
+
+        event.Skip();
+    }
 
 private:
     DECLARE_EVENT_TABLE()
@@ -593,6 +599,7 @@ BEGIN_EVENT_TABLE(MyComboBox, wxComboBox)
     EVT_KEY_UP(MyComboBox::OnKeyUp)
 
     EVT_SET_FOCUS(MyComboBox::OnFocusGot)
+    EVT_KILL_FOCUS(MyComboBox::OnFocusLost)
 END_EVENT_TABLE()
 
 BEGIN_EVENT_TABLE(MyRadioBox, wxRadioBox)
@@ -1003,7 +1010,7 @@ MyPanel::MyPanel( wxFrame *frame, int x, int y, int w, int h )
     dc.SelectObject( wxNullBitmap );
 
     wxPanel *panel2 = new wxPanel(panel, -1, wxPoint(100, 0), wxSize(100, 200));
-    (void)new wxBitmapButton(panel2, ID_BITMAP_BTN, bitmap, wxPoint(0, 20));
+    (void)new wxBitmapButton(panel2, ID_BITMAP_BTN, bitmap, wxPoint(0, 20), wxDefaultSize, wxBORDER_NONE);
     (void)new wxToggleButton(panel2, ID_BITMAP_BTN_ENABLE,
                              wxT("Enable/disable &bitmap"), wxPoint(0, 140));
 
@@ -1030,6 +1037,20 @@ MyPanel::MyPanel( wxFrame *frame, int x, int y, int w, int h )
 
     bmpBtn->SetBitmapSelected(bmp2);
     bmpBtn->SetBitmapFocus(bmp3);
+
+    wxButton *bmpBtn2 = new wxButton
+                                 (
+                                  panel, wxID_ANY,
+                                  wxEmptyString,
+                                  wxPoint(30, 110),
+                                  wxDefaultSize,
+                                  wxBU_NOTEXT | wxBU_EXACTFIT
+                                 );
+
+    bmpBtn2->SetBitmap(bmp1);
+    bmpBtn2->SetSize(bmpBtn2->GetBestSize());
+    bmpBtn2->SetBitmapSelected(bmp2);
+    bmpBtn2->SetBitmapFocus(bmp3);
 
     (void)new wxToggleButton(panel, ID_BUTTON_LABEL,
                              wxT("&Toggle label"), wxPoint(250, 20));

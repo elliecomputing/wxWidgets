@@ -4,6 +4,7 @@
 // Author:      ?
 // Modified by:
 // Created:     ?
+// RCS-ID:      $Id$
 // Copyright:   (c) wxWidgets team
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -88,6 +89,17 @@ bool MyApp::OnInit()
     help->SetShouldPreventAppExit(true);
 
     help -> DisplayContents();
+
+// test contigute matches
+    help->GetHelpWindow()->GetHtmlWindow()->Highlight (wxHtmlSearchParameters().Keyword(wxT("o")).CaseSensitive(false).WholeWord(false));
+
+// test matches with different response in whole word/case sensitive
+    help->GetHelpWindow()->GetHtmlWindow()->Highlight (wxHtmlSearchParameters().Keyword(wxT("in")).CaseSensitive(false).WholeWord(false));
+    help->GetHelpWindow()->GetHtmlWindow()->Highlight (wxHtmlSearchParameters().Keyword(wxT("in")).CaseSensitive(true).WholeWord(false));
+    help->GetHelpWindow()->GetHtmlWindow()->Highlight (wxHtmlSearchParameters().Keyword(wxT("in")).CaseSensitive(false).WholeWord(true));
+
+// test matches other several cells
+    help->GetHelpWindow()->GetHtmlWindow()->Highlight (wxHtmlSearchParameters().Keyword(wxT("to demonstrate that")).CaseSensitive(false).WholeWord(false));
 
     return true;
 }

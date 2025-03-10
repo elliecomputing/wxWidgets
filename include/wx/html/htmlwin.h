@@ -220,6 +220,19 @@ private:
     wxHtmlWindowInterface *m_interface;
 };
 
+struct WXDLLIMPEXP_HTML wxHtmlSearchParameters
+{
+    wxString m_keyword;
+    bool m_caseSensitive;
+    bool m_wholeWord;
+
+    wxHtmlSearchParameters() : m_caseSensitive(false), m_wholeWord(false) {}
+
+    wxHtmlSearchParameters& CaseSensitive(bool caseSensitive) { m_caseSensitive=caseSensitive; return *this; }
+    wxHtmlSearchParameters& WholeWord(bool wholeWord) { m_wholeWord=wholeWord; return *this; }
+    wxHtmlSearchParameters& Keyword(const wxString &keyword) { m_keyword=keyword; return *this; }
+};
+
 // ----------------------------------------------------------------------------
 // wxHtmlWindow
 //                  (This is probably the only class you will directly use.)
@@ -292,6 +305,9 @@ public:
     // frame title, e.g. "HtmlHelp : %s". It must contain exactly one %s
     void SetRelatedFrame(wxFrame* frame, const wxString& format);
     wxFrame* GetRelatedFrame() const {return m_RelatedFrame;}
+
+    void Highlight(const wxHtmlSearchParameters &search_parameters);
+    void DisableHighlight();
 
 #if wxUSE_STATUSBAR
     // After(!) calling SetRelatedFrame, this sets statusbar slot where messages
@@ -498,6 +514,9 @@ protected:
     // current text selection or NULL
     wxHtmlSelection *m_selection;
 
+    // current list of matches or NULL
+    wxHtmlHighlights *m_highlightList;
+
     // true if the user is dragging mouse to select text
     bool m_makingSelection;
 
@@ -605,6 +624,58 @@ private:
     DECLARE_DYNAMIC_CLASS_NO_ASSIGN(wxHtmlCellEvent)
 };
 
+//------------------------------------------------------------------------------
+// wxHtmlCellHighlighter
+//                  This class takes cells as input and scans them for
+//                  occurrence of keyword(s).
+//------------------------------------------------------------------------------
+
+class WXDLLIMPEXP_HTML wxHtmlCellHighlighter
+{
+public:
+    wxHtmlCellHighlighter() {}
+    virtual ~wxHtmlCellHighlighter() {}
+
+    // Sets the keyword we will be searching for
+    virtual void LookFor(const wxHtmlSearchParameters &search_parameters);
+
+    // Scans the cells for the keyword.
+    // Fills @matches with found matches
+    virtual void Scan(const wxHtmlCell *insideCell,
+                      wxHtmlHighlights &matches);
+
+private:
+    wxHtmlSearchParameters m_searchParameters;
+
+    // Stores the position in a converted text of the end character in a cell.
+    // Storing end character is less natural but more practical as it is then
+    //  trivial to check whether a position is inside a cell or not (no need
+    //  for clumsy tests with next position in list)
+    struct PositionForCell
+    {
+        int                 m_endPositionInText;
+        const wxHtmlCell*   m_cell;
+
+        PositionForCell() : m_endPositionInText(-1), m_cell(0) {}
+        PositionForCell(int positionInText, const wxHtmlCell* cell)
+            : m_endPositionInText(positionInText), m_cell(cell) {}
+    };
+
+    typedef wxVector<PositionForCell> PositionForCellVector;
+
+    void BuildTextAndCellsEndVector (const wxHtmlCell *insideCell, wxString& text,
+        PositionForCellVector& cellsEndVector);
+
+    static void DetermineHighlightLimit (int position, int &relativePos,
+        const wxHtmlCell *&cell, const PositionForCellVector& cellsEndVector,
+        int& startPositionForCell, PositionForCellVector::const_iterator &itEndOfCell,
+        bool end);
+
+    bool TestPosition (const wxString &text, wxString::const_iterator itTestAt,
+        wxString::const_iterator &itEndedAt) const;
+
+    wxDECLARE_NO_COPY_CLASS(wxHtmlCellHighlighter);
+};
 
 
 /*!

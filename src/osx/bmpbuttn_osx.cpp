@@ -41,7 +41,7 @@ bool wxBitmapButton::Create( wxWindow *parent,
     if ( style & wxBU_AUTODRAW )
     {
         m_marginX =
-        m_marginY = wxDEFAULT_BUTTON_MARGIN;
+        m_marginY = 5; // unfortunately can't get the code to work yet, so at least put something OK
     }
     else
     {

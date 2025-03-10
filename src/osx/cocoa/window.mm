@@ -1037,6 +1037,8 @@ BOOL wxOSX_acceptsFirstResponder(NSView* self, SEL _cmd)
 
 BOOL wxOSX_becomeFirstResponder(NSView* self, SEL _cmd)
 {
+    wxLogTrace(wxT("LowLevelFocus"), wxT("becomeFirstResponder %p (%s)"), self, class_getName([self class]));
+
     wxWidgetCocoaImpl* impl = (wxWidgetCocoaImpl* ) wxWidgetImpl::FindFromWXWidget( self );
     if (impl == NULL)
         return NO;
@@ -1046,6 +1048,8 @@ BOOL wxOSX_becomeFirstResponder(NSView* self, SEL _cmd)
 
 BOOL wxOSX_resignFirstResponder(NSView* self, SEL _cmd)
 {
+    wxLogTrace(wxT("LowLevelFocus"), wxT("resignFirstResponder %p (%s)"), self, class_getName([self class]));
+
     wxWidgetCocoaImpl* impl = (wxWidgetCocoaImpl* ) wxWidgetImpl::FindFromWXWidget( self );
     if (impl == NULL)
         return NO;
@@ -1817,6 +1821,9 @@ void wxWidgetCocoaImpl::Init()
 
 wxWidgetCocoaImpl::~wxWidgetCocoaImpl()
 {
+    if ( GetWXPeer() && GetWXPeer()->IsFrozen() )
+        [[m_osxView window] enableFlushWindow];
+    
     RemoveAssociations( this );
 
     if ( !IsRootControl() )

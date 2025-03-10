@@ -382,6 +382,11 @@ void wxAuiDefaultDockArt::DrawSash(wxDC& dc, wxWindow *window, int orientation, 
     wxUnusedVar(window);
     wxUnusedVar(orientation);
 
+    // clear the rectangle
+    dc.SetPen(*wxTRANSPARENT_PEN);
+    dc.SetBrush(m_sashBrush);
+    dc.DrawRectangle(rect.x, rect.y, rect.width, rect.height);
+
     HIRect splitterRect = CGRectMake( rect.x , rect.y , rect.width , rect.height );
     CGContextRef cgContext ;
     wxGCDCImpl *impl = (wxGCDCImpl*) dc.GetImpl();

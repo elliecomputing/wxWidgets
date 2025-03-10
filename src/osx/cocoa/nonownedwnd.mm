@@ -20,6 +20,8 @@
 
 #include "wx/osx/private.h"
 
+#include <objc/objc-runtime.h>
+
 NSScreen* wxOSXGetMenuScreen()
 {
     if ( [NSScreen screens] == nil )

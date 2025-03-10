@@ -733,8 +733,13 @@ bool wxClipboard::GetData( wxDataObject& data )
         if ( format != wxDF_TEXT || data.GetDataSize(format) > 1 )
 #endif // UNICODE / !UNICODE
         {
-            wxCHECK_MSG( m_formatSupported, false,
-                         wxT("error retrieving data from clipboard") );
+            if ( !m_formatSupported )
+            {
+                wxLogTrace(TRACE_CLIPBOARD,
+                   wxT("Format %s, failed to paste, trying another format"),
+                   format.GetId().c_str());
+                continue;
+            }
         }
 
         return true;

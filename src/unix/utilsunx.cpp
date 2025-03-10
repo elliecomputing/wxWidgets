@@ -583,8 +583,8 @@ long wxExecute(char **argv, int flags, wxProcess *process,
     // doesn't do something which must be done to allow this to work, but I
     // don't know what yet, so for now just warn the user (this is the least we
     // can do) about it
-    wxASSERT_MSG( wxThread::IsMain(),
-                    wxT("wxExecute() can be called only from the main thread") );
+//    wxASSERT_MSG( wxThread::IsMain(),
+//                    wxT("wxExecute() can be called only from the main thread") );
 #endif // wxUSE_THREADS
 
 #if defined(__WXCOCOA__) || ( defined(__WXOSX_MAC__) && wxOSX_USE_COCOA_OR_CARBON )

@@ -3844,9 +3844,6 @@ void wxAuiManager::OnRender(wxAuiManagerEvent& evt)
 
     wxDC* dc = evt.GetDC();
 
-#ifdef __WXMAC__
-    dc->Clear() ;
-#endif
     int i, part_count;
     for (i = 0, part_count = m_uiParts.GetCount();
          i < part_count; ++i)

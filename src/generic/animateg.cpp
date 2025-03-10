@@ -4,6 +4,7 @@
 // Author:      Julian Smart and Guillermo Rodriguez Garcia
 // Modified by: Francesco Montorsi
 // Created:     13/8/99
+// RCS-ID:      $Id$
 // Copyright:   (c) Julian Smart and Guillermo Rodriguez Garcia
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
@@ -25,6 +26,10 @@
     #include "wx/dcclient.h"
     #include "wx/module.h"
 #endif
+
+#if wxUSE_FILESYSTEM
+    #include "wx/filesys.h"
+#endif // wxUSE_FILESYSTEM
 
 #include "wx/wfstream.h"
 #include "wx/gifdecod.h"
@@ -111,11 +116,27 @@ wxColour wxAnimation::GetBackgroundColour() const
 
 bool wxAnimation::LoadFile(const wxString& filename, wxAnimationType type)
 {
+#if wxUSE_FILESYSTEM
+    wxFileSystem fs;
+
+    wxFSFile *file = fs.OpenFile (filename);
+    if ( !file )
+        return false;
+
+    bool success = false;
+    wxInputStream *stream = file->GetStream ();
+    if ( stream && stream->IsOk() )
+        success = Load(*stream, type);
+
+    delete file;
+    return success;
+#else
     wxFileInputStream stream(filename);
     if ( !stream.IsOk() )
         return false;
 
     return Load(stream, type);
+#endif
 }
 
 bool wxAnimation::Load(wxInputStream &stream, wxAnimationType type)
@@ -306,10 +327,12 @@ wxAnimationCtrl::~wxAnimationCtrl()
 
 bool wxAnimationCtrl::LoadFile(const wxString& filename, wxAnimationType type)
 {
-    wxFileInputStream fis(filename);
-    if (!fis.IsOk())
+    wxAnimation anim;
+    if ( !anim.LoadFile(filename, type) || !anim.IsOk() )
         return false;
-    return Load(fis, type);
+
+    SetAnimation(anim);
+    return true;
 }
 
 bool wxAnimationCtrl::Load(wxInputStream& stream, wxAnimationType type)

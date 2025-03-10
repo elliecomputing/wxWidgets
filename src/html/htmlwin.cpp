@@ -320,6 +320,7 @@ void wxHtmlWindow::Init()
     m_Processors = NULL;
     SetBorders(10);
     m_selection = NULL;
+    m_highlightList = NULL;
     m_makingSelection = false;
 #if wxUSE_CLIPBOARD
     m_timerAutoScroll = NULL;
@@ -364,6 +365,8 @@ wxHtmlWindow::~wxHtmlWindow()
 
     delete m_selection;
 
+    delete m_highlightList;
+
     delete m_Cell;
 
     if ( m_Processors )
@@ -393,7 +396,24 @@ void wxHtmlWindow::SetRelatedFrame(wxFrame* frame, const wxString& format)
     wxString::Format(m_TitleFormat, wxString());
 }
 
+void wxHtmlWindow::Highlight(const wxHtmlSearchParameters &search_parameters)
+{
+    wxDELETE(m_highlightList);
+    m_highlightList = new wxHtmlHighlights;
 
+    wxHtmlCellHighlighter  highlighter;
+    highlighter.LookFor (search_parameters);
+    highlighter.Scan (m_Cell, *m_highlightList);
+
+    Refresh();
+}
+
+void wxHtmlWindow::DisableHighlight()
+{
+    wxDELETE(m_highlightList);
+
+    Refresh();
+}
 
 #if wxUSE_STATUSBAR
 void wxHtmlWindow::SetRelatedStatusBar(int index)
@@ -440,6 +460,7 @@ bool wxHtmlWindow::DoSetPage(const wxString& source)
     wxString newsrc(source);
 
     wxDELETE(m_selection);
+    wxDELETE(m_highlightList);
 
     // we will soon delete all the cells, so clear pointers to them:
     m_tmpSelFromCell = NULL;
@@ -1190,6 +1211,7 @@ void wxHtmlWindow::OnPaint(wxPaintEvent& WXUNUSED(event))
     wxHtmlRenderingInfo rinfo;
     wxDefaultHtmlRenderingStyle rstyle;
     rinfo.SetSelection(m_selection);
+    rinfo.SetHighlightList(m_highlightList);
     rinfo.SetStyle(&rstyle);
     m_Cell->Draw(*dc, 0, 0,
                  y * wxHTML_SCROLL_STEP + rect.GetTop(),
@@ -1250,7 +1272,7 @@ void wxHtmlWindow::OnSize(wxSizeEvent& event)
     {
         m_selection->Set(m_selection->GetFromCell(),
                          m_selection->GetToCell());
-        m_selection->ClearFromToCharacterPos();
+        // m_selection->ClearFromToCharacterPos();
     }
 
     Refresh();
@@ -1452,7 +1474,7 @@ void wxHtmlWindow::OnInternalIdle()
                         m_selection->Set(wxPoint(x,y), selcell,
                                          m_tmpSelFromPos, m_tmpSelFromCell);
                     }
-                    m_selection->ClearFromToCharacterPos();
+                    // m_selection->ClearFromToCharacterPos();
                     Refresh();
                 }
             }
@@ -1831,6 +1853,203 @@ void wxHtmlWindow::SetDefaultHTMLCursor(HTMLCursor type, const wxCursor& cursor)
             delete ms_cursorText;
             ms_cursorDefault = new wxCursor(cursor);
     }
+}
+//-----------------------------------------------------------------------------
+// wxHtmlCellHighlighter
+//-----------------------------------------------------------------------------
+
+void wxHtmlCellHighlighter::LookFor(
+        const wxHtmlSearchParameters &search_parameters)
+{
+    m_searchParameters = search_parameters;
+
+    wxString reworked_keyword(m_searchParameters.m_keyword);
+
+    // in order to make matcher code simpler, we need to:
+    // - remove spaces at start and end
+    reworked_keyword.Trim();
+
+    // - remove all \n so they don't match generated \n in between cells and
+    //      make the engine KO
+    reworked_keyword.Replace (wxT("\n"), wxT(""));
+
+    // - replace sequences of spaces with a single space
+    wxString space_normalized_keyword;
+    bool in_space_run = false;
+    for (wxString::iterator itnorm=reworked_keyword.begin();
+        itnorm!=reworked_keyword.end(); ++itnorm)
+    {
+        bool is_space = wxIsspace(*itnorm);
+        bool nth_space = in_space_run && is_space;
+        bool add_code = !is_space || !nth_space;
+
+        if (add_code)
+            space_normalized_keyword.append (*itnorm);
+
+        in_space_run = is_space;
+    }
+    reworked_keyword = space_normalized_keyword;
+
+    // - lower the case of letters in case insensitive mode
+    if (!m_searchParameters.m_caseSensitive)
+        reworked_keyword.LowerCase();
+
+    m_searchParameters.m_keyword = reworked_keyword;
+}
+
+void wxHtmlCellHighlighter::Scan(const wxHtmlCell *insideCell,
+                                 wxHtmlHighlights &highlights)
+{
+    if (m_searchParameters.m_keyword.empty())
+        return; // nothing to search
+
+    // The idea here is to first convert 'insideCell' to text, note that here
+    //  we will want to ignore distinctions between spaces, tabs or line feeds,
+    //  these are all blanks with respect to m_WholeWords, so we'll match
+    //  without and check for blanks.
+
+    wxString    text;
+    PositionForCellVector cells_end_vector;
+    BuildTextAndCellsEndVector (insideCell, text, cells_end_vector);
+
+    // Now match the keyword, matching is a bit clever because a space in the
+    //  keyword matches begin/end of string and one or more blanks.
+    // NB: The algorithm is trivial and not efficient, using Boyer Moore
+    //  Horspool matching or something similar could avoid some bad behaviours
+
+    wxString::const_iterator    itRetry; // position where to try next
+    PositionForCellVector::const_iterator itEndOfCell =
+        cells_end_vector.begin();
+
+    int startPositionForCell = 0;
+
+    for (itRetry=text.begin(); itRetry!=text.end(); )
+    {
+        wxString::const_iterator    itEndedAt;
+        if (TestPosition (text, itRetry, itEndedAt)) // found an occurrence
+        {
+            // itRetry is the start position, itHighlight is the end
+            int beginPos = itRetry - text.begin(), beginRelativePos;
+            int endPos = itEndedAt - text.begin(), endRelativePos;
+            const wxHtmlCell *fromCell;
+            const wxHtmlCell *toCell;
+
+            DetermineHighlightLimit (beginPos, beginRelativePos, fromCell,
+                cells_end_vector, startPositionForCell, itEndOfCell, false);
+            DetermineHighlightLimit (endPos, endRelativePos, toCell,
+                cells_end_vector, startPositionForCell, itEndOfCell, true);
+
+            wxHtmlSelection highlight;
+            highlight.Set(beginRelativePos, fromCell, endRelativePos, toCell);
+
+            highlights.push_back(highlight);
+
+            itRetry = itEndedAt; // retry after this match
+        }
+        else
+            ++itRetry;  // retry one char further
+    }
+}
+
+void wxHtmlCellHighlighter::BuildTextAndCellsEndVector (
+    const wxHtmlCell *insideCell, wxString& text,
+    PositionForCellVector& position_for_cells)
+{
+    wxHtmlTerminalCellsInterator i(insideCell->GetFirstTerminal(),
+        insideCell->GetLastTerminal());
+
+    // The purpose of this function is to build a text with an index of the end
+    //  position for each cell, so we'll push a end position each time a cell
+    //  is actually followed by another non-empty cell (or at end).
+    // @prev keeps track of that 'last non-empty cell'
+    const wxHtmlCell *prev = NULL;
+
+    while ( i )
+    {
+        if ( prev && prev->GetParent() != i->GetParent() )
+            text << '\n';
+
+        wxString str(i->ConvertToText(NULL));
+        if (!str.IsEmpty())
+        {
+            position_for_cells.push_back (PositionForCell(text.length(), prev));
+
+            if (!m_searchParameters.m_caseSensitive)
+            {
+                // do lowercase before appending in case it changes @str length
+                str.LowerCase();
+            }
+            text << str;
+
+            prev = *i;
+        }
+
+        ++i;
+    }
+
+    position_for_cells.push_back (PositionForCell(text.length(), prev));
+}
+
+void wxHtmlCellHighlighter::DetermineHighlightLimit (int position,
+        int &relativePos, const wxHtmlCell *&cell,
+        const PositionForCellVector& cellsEndVector,
+        int& startPositionForCell,
+        PositionForCellVector::const_iterator &itEndOfCell, bool end)
+{
+    // find the position, end positions are searched with a 'strict less than'
+    //  so as that relativePos might be exactly the word length, avoiding the
+    //  spurious inclusion of next space inside the highlight)
+    while (itEndOfCell!=cellsEndVector.end() &&
+            ((!end && (*itEndOfCell).m_endPositionInText <= position) ||
+             ( end && (*itEndOfCell).m_endPositionInText < position)) )
+    {
+        startPositionForCell = (*itEndOfCell).m_endPositionInText;
+        ++itEndOfCell;
+    }
+
+    cell = (*itEndOfCell).m_cell;
+    relativePos = position - startPositionForCell;
+}
+
+bool wxHtmlCellHighlighter::TestPosition (const wxString &text,
+        wxString::const_iterator itTestAt,
+        wxString::const_iterator &itEndedAt) const
+{
+    wxString::const_iterator itKeyword = m_searchParameters.m_keyword.begin();
+
+    bool ok = true;
+
+    // want a word start limit, we define that as "at start or after space"
+    if (m_searchParameters.m_wholeWord)
+        ok = itTestAt==text.begin() || wxIsspace(*(itTestAt-1));
+
+    itKeyword = m_searchParameters.m_keyword.begin();
+    for (itEndedAt=itTestAt;
+        ok && itKeyword!=m_searchParameters.m_keyword.end();
+        ++itKeyword)
+    {
+        if (*itKeyword == ' ')
+        {
+            ok = false; // unless we match at least a space it's KO
+            while (itEndedAt!=text.end() && wxIsspace(*itEndedAt))
+            {
+                ++itEndedAt;
+                ok = true;
+            }
+        }
+        else
+        {
+            ok = itEndedAt != text.end() && *itEndedAt == *itKeyword;
+            // simple char, not at end and matching, continue
+            if (ok)
+                ++itEndedAt;
+        }
+    }
+
+    if (ok && m_searchParameters.m_wholeWord)
+        ok = itEndedAt==text.end() || wxIsspace(*itEndedAt);
+
+    return ok;
 }
 
 //-----------------------------------------------------------------------------

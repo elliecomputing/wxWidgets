@@ -145,6 +145,20 @@
         }
     }
 }
+
+- (void)textDidEndEditing:(NSNotification *)aNotification
+{
+    wxUnusedVar(aNotification);
+
+    [super textDidEndEditing:aNotification];
+
+    wxWidgetCocoaImpl* impl = (wxWidgetCocoaImpl* ) wxWidgetImpl::FindFromWXWidget( self );
+    if ( impl )
+    {
+        impl->DoNotifyFocusEvent( false, NULL );
+    }
+}
+
 @end
 
 wxNSComboBoxControl::wxNSComboBoxControl( wxComboBox *wxPeer, WXWidget w )
