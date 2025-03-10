@@ -62,7 +62,7 @@ public:
         if (!DoAdd(watch))
             return false;
 
-        // add watch to our map (always succeedes, checked above)
+        // add watch to our map (always succeeds, checked above)
         wxFSWatchEntries::value_type val(watch->GetPath(), watch);
         return m_watches.insert(val).second;
     }
@@ -84,8 +84,16 @@ public:
 
     virtual bool RemoveAll()
     {
+        bool ret = true;
+        for ( wxFSWatchEntries::iterator it = m_watches.begin();
+              it != m_watches.end();
+              ++it )
+        {
+            if ( !DoRemove(it->second) )
+               ret = false;
+        }
         m_watches.clear();
-        return true;
+        return ret;
     }
 
     // Check whether any filespec matches the file's ext (if present)

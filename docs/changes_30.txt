@@ -346,9 +346,9 @@ Changes in behaviour which may result in compilation errors
 - Removed global GetLine() function from wx/protocol/protocol.h, use
   wxProtocol::ReadLine() instead.
 
-- wxVariant no longer derives from wxObject. wxVariantData also no longer
-  derives from wxObject; instead of using wxDynamicCast with wxVariantData you
-  can use the macro wxDynamicCastVariantData with the same arguments.
+- wxVariantData no longer derives from wxObject; instead of using
+  wxDynamicCast with wxVariantData you can use the macro
+  wxDynamicCastVariantData with the same arguments.
 
 - wxWindow::Next/PrevControlId() don't exist any more as they couldn't be
   implemented correctly any longer because automatically generated ids are not
@@ -528,13 +528,13 @@ Build system changes
   it's not the default "x86". E.g. a library built with MSVC 10 for amd64 is
   called "wxbase294ud_vc110_amd64.dll" now.
 
-- MSVC projects don't include neither wxUniversal nor ANSI (non-Unicode)
+- MSVC projects don't include the wxUniversal or ANSI (non-Unicode)
   configurations any more. The simplest way to build wxWidgets in these
   configurations if you need them is to use nmake from the command line with
   WXUNIV=1 or UNICODE=0 command line parameter respectively.
 
 - The manifest is not included by wx/msw/wx.rc any longer for MSVC compiler.
-  If you're using MSVC 6 or 7 which require it, you must explicitly define
+  If you're using MSVC 7 which requires it, you must explicitly define
   wxUSE_RC_MANIFEST=1 and also predefine WX_CPU_X86 in the resource compiler
   options in your project file.
 
@@ -733,10 +733,10 @@ All (GUI):
 - Support hexadecimal numbers in wxSpinCtrl.
 - Respect window max size in wxBoxSizer (Nathan Ridge).
 - Add support for searching in wxWebView for MSW and GTK (Allonii).
-- Add generic wxFileSystem support to wxWebView with 
+- Add generic wxFileSystem support to wxWebView with
   wxWebViewFSHandler (Nick Matthews).
 - Add possibility to disable context menu in wxWebView.
-- Add ability to register custom wxWebView backends using 
+- Add ability to register custom wxWebView backends using
   wxWebView::RegisterFactory and a wxWebViewFactory derived class.
 - Add possibility to hide and show again wxRibbonBar pages (wxBen).
 - Add wxRibbonBar pages highlighting (wxBen).

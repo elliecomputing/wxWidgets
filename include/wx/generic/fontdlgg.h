@@ -14,12 +14,7 @@
 #include "wx/gdicmn.h"
 #include "wx/font.h"
 
-#ifdef __WXWINCE__
-#define USE_SPINCTRL_FOR_POINT_SIZE 1
-class WXDLLIMPEXP_FWD_CORE wxSpinEvent;
-#else
 #define USE_SPINCTRL_FOR_POINT_SIZE 0
-#endif
 
 /*
  * FONT DIALOG
@@ -50,7 +45,7 @@ public:
         : wxFontDialogBase(parent, data) { Init(); }
     virtual ~wxGenericFontDialog();
 
-    virtual int ShowModal();
+    virtual int ShowModal() wxOVERRIDE;
 
     // Internal functions
     void OnCloseWindow(wxCloseEvent& event);
@@ -66,7 +61,7 @@ public:
 
 protected:
 
-    virtual bool DoCreate(wxWindow *parent);
+    virtual bool DoCreate(wxWindow *parent) wxOVERRIDE;
 
 private:
 
@@ -83,7 +78,9 @@ private:
     wxChoice *m_colourChoice;
     wxCheckBox *m_underLineCheckBox;
 
-#if !USE_SPINCTRL_FOR_POINT_SIZE
+#if USE_SPINCTRL_FOR_POINT_SIZE
+    wxSpinCtrl *m_pointSizeSpin;
+#else
     wxChoice   *m_pointSizeChoice;
 #endif
 
@@ -91,8 +88,8 @@ private:
     bool       m_useEvents;
 
     //  static bool fontDialogCancelled;
-    DECLARE_EVENT_TABLE()
-    DECLARE_DYNAMIC_CLASS(wxGenericFontDialog)
+    wxDECLARE_EVENT_TABLE();
+    wxDECLARE_DYNAMIC_CLASS(wxGenericFontDialog);
 };
 
 #endif // _WX_GENERIC_FONTDLGG_H

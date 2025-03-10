@@ -22,10 +22,7 @@ public:
     DEFINE_STD_WXCOLOUR_CONSTRUCTORS
 
     // copy ctors and assignment operators
-    wxColour(const wxColour& col)
-    {
-        *this = col;
-    }
+    wxDECLARE_DEFAULT_COPY_CTOR(wxColour)
 
     wxColour& operator=(const wxColour& col);
 
@@ -65,7 +62,7 @@ private:
     unsigned char m_alpha;
 
 private:
-    DECLARE_DYNAMIC_CLASS(wxColour)
+    wxDECLARE_DYNAMIC_CLASS(wxColour);
 };
 
 #endif // _WX_GENERIC_COLOUR_H_

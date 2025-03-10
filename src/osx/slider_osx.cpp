@@ -15,8 +15,8 @@
 #include "wx/slider.h"
 #include "wx/osx/private.h"
 
-BEGIN_EVENT_TABLE(wxSlider, wxControl)
-END_EVENT_TABLE()
+wxBEGIN_EVENT_TABLE(wxSlider, wxControl)
+wxEND_EVENT_TABLE()
 
  // The dimensions of the different styles of sliders (from Aqua document)
 #if wxOSX_USE_COCOA
@@ -117,10 +117,14 @@ bool wxSlider::Create(wxWindow *parent,
     // other values
 #endif
     
-    if (style & wxSL_LABELS)
+    if (style & wxSL_MIN_MAX_LABELS)
     {
         m_macMinimumStatic = new wxStaticText( parent, wxID_ANY, wxEmptyString );
         m_macMaximumStatic = new wxStaticText( parent, wxID_ANY, wxEmptyString );
+    }
+
+    if (style & wxSL_VALUE_LABEL)
+    {
         m_macValueStatic = new wxStaticText( parent, wxID_ANY, wxEmptyString );
     }
 
@@ -152,15 +156,19 @@ int wxSlider::GetValue() const
 
 void wxSlider::SetValue(int value)
 {
-    if ( m_macValueStatic )
-    {
-        wxString valuestring;
-        valuestring.Printf( wxT("%d"), value );
-        m_macValueStatic->SetLabel( valuestring );
-    }
-
     // We only invert for the setting of the actual native widget
     GetPeer()->SetValue( ValueInvertOrNot( value ) );
+
+    if ( m_macValueStatic )
+    {
+        wxString valueString;
+
+        // In case the passed value is outside the slider's range,
+        // macOS has bound the value to a valid value;
+        // use this value also for the value string
+        valueString.Printf( "%d", GetValue() );
+        m_macValueStatic->SetLabel( valueString );
+    }
 }
 
 void wxSlider::SetRange(int minValue, int maxValue)
@@ -171,7 +179,7 @@ void wxSlider::SetRange(int minValue, int maxValue)
     // changing the range.
     const int valueOld = GetValue();
 
-    wxString value;
+    wxString valueString;
 
     m_rangeMin = minValue;
     m_rangeMax = maxValue;
@@ -181,28 +189,19 @@ void wxSlider::SetRange(int minValue, int maxValue)
 
     if (m_macMinimumStatic)
     {
-        value.Printf( wxT("%d"), ValueInvertOrNot( m_rangeMin ) );
-        m_macMinimumStatic->SetLabel( value );
+        valueString.Printf( "%d", ValueInvertOrNot( m_rangeMin ) );
+        m_macMinimumStatic->SetLabel( valueString );
     }
 
     if (m_macMaximumStatic)
     {
-        value.Printf( wxT("%d"), ValueInvertOrNot( m_rangeMax ) );
-        m_macMaximumStatic->SetLabel( value );
+        valueString.Printf( "%d", ValueInvertOrNot( m_rangeMax ) );
+        m_macMaximumStatic->SetLabel( valueString );
     }
 
-    // If the range is out of bounds, set it to a
-    // value that is within bounds
-    // RN: Testing reveals OSX does its own
-    // bounding, perhaps this isn't needed?
-    int currentValue = GetValue();
-
-    if(currentValue < m_rangeMin)
-        SetValue(m_rangeMin);
-    else if(currentValue > m_rangeMax)
-        SetValue(m_rangeMax);
-
-    // Ensure that our value didn't change.
+    // Use our preserved value (see above),
+    // SetValue(int) also does bounds checking, the value may
+    // be changed so that it is within the new range
     SetValue(valueOld);
 }
 
@@ -375,6 +374,11 @@ wxSize wxSlider::DoGetBestSize() const
 
         if (GetWindowStyle() & wxSL_LABELS)
             size.x += textwidth + wxSLIDER_BORDERTEXT;
+
+        // to let the ticks look good the width of the control has to have an even number,
+        // otherwise, the ticks are not centered with respect to the slider line
+        if ((GetWindowStyle() & wxSL_AUTOTICKS) && ((size.x%2) != 0))
+            size.x += 1;
     }
     else
     {
@@ -390,6 +394,11 @@ wxSize wxSlider::DoGetBestSize() const
             size.y += textheight + wxSLIDER_BORDERTEXT;
             size.x += (mintwidth / 2) + (maxtwidth / 2);
         }
+
+        // to let the ticks look good the height of the control has to have an even number,
+        // otherwise, the ticks are not centered with respect to the slider line
+        if ((GetWindowStyle() & wxSL_AUTOTICKS) && ((size.y%2) != 0))
+            size.y += 1;
     }
 
     return size;
@@ -397,9 +406,25 @@ wxSize wxSlider::DoGetBestSize() const
 
 void wxSlider::DoSetSize(int x, int y, int w, int h, int sizeFlags)
 {
-    int yborder = 0;
+    if ( w == -1 || h == -1 ||
+            (!(sizeFlags & wxSIZE_ALLOW_MINUS_ONE) && (x == -1 || y == -1)) )
+    {
+        const wxRect currentRect = GetRect();
+        if ( !(sizeFlags & wxSIZE_ALLOW_MINUS_ONE) )
+        {
+            if ( x == -1 )
+                x = currentRect.x;
+            if ( y == -1 )
+                y = currentRect.y;
+        }
+
+        if ( w == -1 )
+            w = currentRect.width;
+        if ( h == -1 )
+            h = currentRect.height;
+    }
+
     int minValWidth, maxValWidth, textheight;
-    int sliderBreadth;
     int width = w;
 
     if (GetWindowStyle() & wxSL_LABELS)
@@ -444,9 +469,11 @@ void wxSlider::DoSetSize(int x, int y, int w, int h, int sizeFlags)
 
         GetTextExtent(text, &valValWidth, &ht);
 
+        int yborder;
         yborder = textheight + wxSLIDER_BORDERTEXT;
 
         // Get slider breadth
+        int sliderBreadth;
         if (GetWindowStyle() & wxSL_AUTOTICKS)
             sliderBreadth = wxSLIDER_DIMENSIONACROSS_WITHTICKMARKS;
         else
@@ -475,7 +502,7 @@ void wxSlider::DoSetSize(int x, int y, int w, int h, int sizeFlags)
     }
 
     // yet another hack since this is a composite control
-    // when wxSlider has it's size hardcoded, we're not allowed to
+    // when wxSlider has its size hardcoded, we're not allowed to
     // change the size. But when the control has labels, we DO need
     
     // to resize the internal Mac control to accommodate the text labels.
@@ -498,11 +525,6 @@ void wxSlider::DoSetSize(int x, int y, int w, int h, int sizeFlags)
     wxControl::DoSetSize( x, y, w, h, sizeFlags );
 
     m_minWidth = minWidth;
-}
-
-void wxSlider::DoMoveWindow(int x, int y, int width, int height)
-{
-    wxControl::DoMoveWindow( x, y, width, height );
 }
 
 // Common processing to invert slider values based on wxSL_INVERSE

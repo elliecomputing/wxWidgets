@@ -32,7 +32,7 @@ class MyResizableListCtrl : public wxListCtrl
     // NOTE: Using this REQUIRES a default constructor: that means either: giving a
     // default value for all parameters in your constructor, or else having a dummy
     // MyResizableListCtrl(){} constructor in addition to your regular one.
-    DECLARE_DYNAMIC_CLASS( MyResizableListCtrl )
+    wxDECLARE_DYNAMIC_CLASS( MyResizableListCtrl );
 
 public:
 
@@ -56,11 +56,11 @@ public:
                          const wxSize &size = wxDefaultSize,
                          long style = wxLC_REPORT,
                          const wxValidator& validator = wxDefaultValidator,
-                         const wxString &name = wxT("myResizableListCtrl")
+                         const wxString &name = "myResizableListCtrl"
                        );
 
     // Destructor.
-    ~MyResizableListCtrl(){};
+    ~MyResizableListCtrl(){}
 
 protected:
 
@@ -76,7 +76,7 @@ protected:
 private:
 
     // wxWidgets macro, required to be able to use Event tables in the .cpp file.
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_EVENT_TABLE();
 
 };
 

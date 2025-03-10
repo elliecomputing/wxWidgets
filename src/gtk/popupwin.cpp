@@ -16,7 +16,7 @@
 #ifndef WX_PRECOMP
 #endif // WX_PRECOMP
 
-#include <gtk/gtk.h>
+#include "wx/gtk/private/wrapgtk.h"
 
 #include "wx/gtk/private/win_gtk.h"
 
@@ -63,6 +63,7 @@ static gint gtk_popup_button_press (GtkWidget *widget, GdkEvent *gdk_event, wxPo
 //-----------------------------------------------------------------------------
 
 extern "C" {
+static
 bool gtk_dialog_delete_callback( GtkWidget *WXUNUSED(widget), GdkEvent *WXUNUSED(event), wxPopupWindow *win )
 {
     if (win->IsEnabled())
@@ -77,9 +78,9 @@ bool gtk_dialog_delete_callback( GtkWidget *WXUNUSED(widget), GdkEvent *WXUNUSED
 //-----------------------------------------------------------------------------
 
 #ifdef __WXUNIVERSAL__
-BEGIN_EVENT_TABLE(wxPopupWindow,wxPopupWindowBase)
+wxBEGIN_EVENT_TABLE(wxPopupWindow,wxPopupWindowBase)
     EVT_SIZE(wxPopupWindow::OnSize)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 #endif
 
 wxPopupWindow::~wxPopupWindow()
@@ -105,8 +106,12 @@ bool wxPopupWindow::Create( wxWindow *parent, int style )
     g_object_ref( m_widget );
 
     gtk_widget_set_name( m_widget, "wxPopupWindow" );
-    // wxPopupWindow is used for different windows as well
-    // gtk_window_set_type_hint( GTK_WINDOW(m_widget), GDK_WINDOW_TYPE_HINT_COMBO );
+
+    // While wxPopupWindow is used for different windows as well, we don't
+    // really know how is it going to be used but we do know that without the
+    // hint at all, it doesn't work correctly, at least under Wayland, where
+    // GTK only maps COMBO and {DROPDOWN,POPUP}_MENU to popups, so do set it.
+    gtk_window_set_type_hint( GTK_WINDOW(m_widget), GDK_WINDOW_TYPE_HINT_COMBO );
 
     // Popup windows can be created without parent, so handle this correctly.
     if (parent)

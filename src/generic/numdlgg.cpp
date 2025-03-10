@@ -19,22 +19,19 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_NUMBERDLG
 
 #ifndef WX_PRECOMP
     #include <stdio.h>
 
-    #include "wx/utils.h"
     #include "wx/dialog.h"
     #include "wx/button.h"
     #include "wx/stattext.h"
     #include "wx/textctrl.h"
     #include "wx/intl.h"
     #include "wx/sizer.h"
+    #include "wx/wxcrtvararg.h"
 #endif
 
 #if wxUSE_STATLINE
@@ -61,12 +58,12 @@
 // wxNumberEntryDialog
 // ----------------------------------------------------------------------------
 
-BEGIN_EVENT_TABLE(wxNumberEntryDialog, wxDialog)
+wxBEGIN_EVENT_TABLE(wxNumberEntryDialog, wxDialog)
     EVT_BUTTON(wxID_OK, wxNumberEntryDialog::OnOK)
     EVT_BUTTON(wxID_CANCEL, wxNumberEntryDialog::OnCancel)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
-IMPLEMENT_CLASS(wxNumberEntryDialog, wxDialog)
+wxIMPLEMENT_CLASS(wxNumberEntryDialog, wxDialog);
 
 bool wxNumberEntryDialog::Create(wxWindow *parent,
                                          const wxString& message,
@@ -88,12 +85,10 @@ bool wxNumberEntryDialog::Create(wxWindow *parent,
     m_max = max;
     m_min = min;
 
-    wxBeginBusyCursor();
-
     wxBoxSizer *topsizer = new wxBoxSizer( wxVERTICAL );
 #if wxUSE_STATTEXT
     // 1) text message
-    topsizer->Add( CreateTextSizer( message ), 0, wxALL, 10 );
+    topsizer->Add( CreateTextSizer( message ), wxSizerFlags().DoubleBorder() );
 #endif
 
     // 2) prompt and text ctrl
@@ -102,16 +97,21 @@ bool wxNumberEntryDialog::Create(wxWindow *parent,
 #if wxUSE_STATTEXT
     // prompt if any
     if (!prompt.empty())
-        inputsizer->Add( new wxStaticText( this, wxID_ANY, prompt ), 0, wxCENTER | wxLEFT, 10 );
+        inputsizer->Add( new wxStaticText( this, wxID_ANY, prompt ),
+                         wxSizerFlags().Center().DoubleBorder(wxLEFT) );
 #endif
 
     // spin ctrl
     wxString valStr;
     valStr.Printf(wxT("%ld"), m_value);
+#if wxUSE_SPINCTRL
     m_spinctrl = new wxSpinCtrl(this, wxID_ANY, valStr, wxDefaultPosition, wxSize( 140, wxDefaultCoord ), wxSP_ARROW_KEYS, (int)m_min, (int)m_max, (int)m_value);
-    inputsizer->Add( m_spinctrl, 1, wxCENTER | wxLEFT | wxRIGHT, 10 );
+#else
+    m_spinctrl = new wxTextCtrl(this, wxID_ANY, valStr, wxDefaultPosition, wxSize( 140, wxDefaultCoord ));
+#endif
+    inputsizer->Add( m_spinctrl, wxSizerFlags(1).Center().DoubleBorder(wxLEFT | wxRIGHT));
     // add both
-    topsizer->Add( inputsizer, 0, wxEXPAND | wxLEFT|wxRIGHT, 5 );
+    topsizer->Add( inputsizer, wxSizerFlags().Expand().Border(wxLEFT | wxRIGHT));
 
     // 3) buttons if any
     wxSizer *buttonSizer = CreateSeparatedButtonSizer(wxOK | wxCANCEL);
@@ -121,17 +121,13 @@ bool wxNumberEntryDialog::Create(wxWindow *parent,
     }
 
     SetSizer( topsizer );
-    SetAutoLayout( true );
 
     topsizer->SetSizeHints( this );
-    topsizer->Fit( this );
 
     Centre( wxBOTH );
 
     m_spinctrl->SetSelection(-1, -1);
     m_spinctrl->SetFocus();
-
-    wxEndBusyCursor();
 
     return true;
 }

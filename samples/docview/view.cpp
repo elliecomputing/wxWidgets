@@ -12,9 +12,6 @@
 // For compilers that support precompilation, includes "wx/wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
     #include "wx/wx.h"
@@ -32,11 +29,11 @@
 // DrawingView implementation
 // ----------------------------------------------------------------------------
 
-IMPLEMENT_DYNAMIC_CLASS(DrawingView, wxView)
+wxIMPLEMENT_DYNAMIC_CLASS(DrawingView, wxView);
 
-BEGIN_EVENT_TABLE(DrawingView, wxView)
+wxBEGIN_EVENT_TABLE(DrawingView, wxView)
     EVT_MENU(wxID_CUT, DrawingView::OnCut)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 // What to do when a view is created. Creates actual
 // windows for displaying the view.
@@ -144,13 +141,13 @@ void DrawingView::OnCut(wxCommandEvent& WXUNUSED(event) )
 // TextEditView implementation
 // ----------------------------------------------------------------------------
 
-IMPLEMENT_DYNAMIC_CLASS(TextEditView, wxView)
+wxIMPLEMENT_DYNAMIC_CLASS(TextEditView, wxView);
 
-BEGIN_EVENT_TABLE(TextEditView, wxView)
+wxBEGIN_EVENT_TABLE(TextEditView, wxView)
     EVT_MENU(wxID_COPY, TextEditView::OnCopy)
     EVT_MENU(wxID_PASTE, TextEditView::OnPaste)
     EVT_MENU(wxID_SELECTALL, TextEditView::OnSelectAll)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 bool TextEditView::OnCreate(wxDocument *doc, long flags)
 {
@@ -198,9 +195,9 @@ bool TextEditView::OnClose(bool deleteWindow)
 // MyCanvas implementation
 // ----------------------------------------------------------------------------
 
-BEGIN_EVENT_TABLE(MyCanvas, wxScrolledWindow)
+wxBEGIN_EVENT_TABLE(MyCanvas, wxScrolledWindow)
     EVT_MOUSE_EVENTS(MyCanvas::OnMouseEvent)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 // Define a constructor for my canvas
 MyCanvas::MyCanvas(wxView *view, wxWindow *parent)
@@ -300,7 +297,7 @@ void ImageCanvas::OnDraw(wxDC& dc)
 // ImageView implementation
 // ----------------------------------------------------------------------------
 
-IMPLEMENT_DYNAMIC_CLASS(ImageView, wxView)
+wxIMPLEMENT_DYNAMIC_CLASS(ImageView, wxView);
 
 ImageDocument* ImageView::GetDocument()
 {

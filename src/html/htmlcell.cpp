@@ -8,9 +8,6 @@
 
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_HTML && wxUSE_STREAMS
 
@@ -81,7 +78,12 @@ wxColour wxDefaultHtmlRenderingStyle::GetSelectedTextColour(
 wxColour wxDefaultHtmlRenderingStyle::GetSelectedTextBgColour(
     const wxColour& WXUNUSED(clr))
 {
-    return wxSystemSettings::GetColour(wxSYS_COLOUR_HIGHLIGHT);
+    // By default we use the fixed standard selection colour, but if we're
+    // associated with a window use the colour appropriate for the window
+    // state, i.e. grey out selection when it's not in focus.
+
+    return wxSystemSettings::GetColour(!m_wnd || m_wnd->HasFocus() ?
+        wxSYS_COLOUR_HIGHLIGHT : wxSYS_COLOUR_BTNSHADOW);
 }
 
 wxColour wxDefaultHtmlRenderingStyle::GetHighlightedTextColour(
@@ -112,7 +114,7 @@ void wxHtmlRenderingInfo::SetHighlightList(wxHtmlHighlights *highlightList)
 // wxHtmlCell
 //-----------------------------------------------------------------------------
 
-IMPLEMENT_ABSTRACT_CLASS(wxHtmlCell, wxObject)
+wxIMPLEMENT_ABSTRACT_CLASS(wxHtmlCell, wxObject);
 
 wxHtmlCell::wxHtmlCell() : wxObject()
 {
@@ -130,7 +132,7 @@ wxHtmlCell::~wxHtmlCell()
     delete m_Link;
 }
 
-// Update the descent value when whe are in a <sub> or <sup>.
+// Update the descent value when we are in a <sub> or <sup>.
 // prevbase is the parent base
 void wxHtmlCell::SetScriptMode(wxHtmlScriptMode mode, long previousBase)
 {
@@ -196,9 +198,7 @@ wxHtmlCell::GetMouseCursorAt(wxHtmlWindowInterface *window,
 
 
 bool
-wxHtmlCell::AdjustPagebreak(int *pagebreak,
-                            const wxArrayInt& WXUNUSED(known_pagebreaks),
-                            int pageHeight) const
+wxHtmlCell::AdjustPagebreak(int *pagebreak, int pageHeight) const
 {
     // Notice that we always break the cells bigger than the page height here
     // as otherwise we wouldn't be able to break them at all.
@@ -218,7 +218,7 @@ wxHtmlCell::AdjustPagebreak(int *pagebreak,
 void wxHtmlCell::SetLink(const wxHtmlLinkInfo& link)
 {
     wxDELETE(m_Link);
-    if (link.GetHref() != wxEmptyString)
+    if (!link.GetHref().empty())
         m_Link = new wxHtmlLinkInfo(link);
 }
 
@@ -257,16 +257,21 @@ wxHtmlCell *wxHtmlCell::FindCellByPos(wxCoord x, wxCoord y,
 }
 
 
-wxPoint wxHtmlCell::GetAbsPos(wxHtmlCell *rootCell) const
+wxPoint wxHtmlCell::GetAbsPos(const wxHtmlCell *rootCell) const
 {
     wxPoint p(m_PosX, m_PosY);
-    for (wxHtmlCell *parent = m_Parent; parent && parent != rootCell;
+    for (const wxHtmlCell *parent = m_Parent; parent && parent != rootCell;
          parent = parent->m_Parent)
     {
         p.x += parent->m_PosX;
         p.y += parent->m_PosY;
     }
     return p;
+}
+
+wxRect wxHtmlCell::GetRect(const wxHtmlCell* rootCell) const
+{
+    return wxRect(GetAbsPos(rootCell), wxSize(m_Width, m_Height));
 }
 
 wxHtmlCell *wxHtmlCell::GetRootCell() const
@@ -325,16 +330,32 @@ bool wxHtmlCell::IsBefore(wxHtmlCell *cell) const
     return false;
 }
 
+wxString wxHtmlCell::GetDescription() const
+{
+    return GetClassInfo()->GetClassName();
+}
+
+wxString wxHtmlCell::Dump(int indent) const
+{
+    wxString s(' ', indent);
+    s += wxString::Format("%s(%p) at (%d, %d) %dx%d",
+                          GetDescription(), this,
+                          m_PosX, m_PosY, GetMaxTotalWidth(), m_Height);
+    if ( !m_id.empty() )
+        s += wxString::Format(" [id=%s]", m_id);
+
+    return s;
+}
 
 //-----------------------------------------------------------------------------
 // wxHtmlWordCell
 //-----------------------------------------------------------------------------
 
-IMPLEMENT_ABSTRACT_CLASS(wxHtmlWordCell, wxHtmlCell)
+wxIMPLEMENT_ABSTRACT_CLASS(wxHtmlWordCell, wxHtmlCell);
 
 wxHtmlWordCell::wxHtmlWordCell(const wxString& word, const wxDC& dc) : wxHtmlCell()
+    , m_Word(word)
 {
-    m_Word = word;
     wxCoord w, h, d;
     dc.GetTextExtent(m_Word, &w, &h, &d);
     m_Width = w;
@@ -358,7 +379,8 @@ void wxHtmlWordCell::SetPreviousWord(wxHtmlWordCell *cell)
 // where s2 and s3 start:
 void wxHtmlWordCell::Split(const wxDC& dc,
                            const wxPoint& selFrom, const wxPoint& selTo,
-                           unsigned& pos1, unsigned& pos2) const
+                           unsigned& pos1, unsigned& pos2,
+                           unsigned& ext1, unsigned& ext2) const
 {
     wxPoint pt1 = (selFrom == wxDefaultPosition) ?
                    wxDefaultPosition : selFrom - GetAbsPos();
@@ -388,8 +410,6 @@ void wxHtmlWordCell::Split(const wxDC& dc,
 
     // before selection:
     // (include character under caret only if in first half of width)
-#ifdef __WXMAC__
-    // implementation using PartialExtents to support fractional widths
     wxArrayInt widths ;
     dc.GetPartialTextExtents(m_Word,widths) ;
     while( i < len && pt1.x >= widths[i] )
@@ -400,24 +420,10 @@ void wxHtmlWordCell::Split(const wxDC& dc,
         if ( widths[i] - pt1.x < charW/2 )
             i++;
     }
-#else // !__WXMAC__
-    wxCoord charW, charH;
-    while ( pt1.x > 0 && i < len )
-    {
-        dc.GetTextExtent(m_Word[i], &charW, &charH);
-        pt1.x -= charW;
-        if ( pt1.x >= -charW/2 )
-        {
-            pos1 += charW;
-            i++;
-        }
-    }
-#endif // __WXMAC__/!__WXMAC__
 
     // in selection:
     // (include character under caret only if in first half of width)
     unsigned j = i;
-#ifdef __WXMAC__
     while( j < len && pt2.x >= widths[j] )
         j++ ;
     if ( j < len )
@@ -426,40 +432,35 @@ void wxHtmlWordCell::Split(const wxDC& dc,
         if ( widths[j] - pt2.x < charW/2 )
             j++;
     }
-#else // !__WXMAC__
-    pos2 = pos1;
-    pt2.x -= pos2;
-    while ( pt2.x > 0 && j < len )
-    {
-        dc.GetTextExtent(m_Word[j], &charW, &charH);
-        pt2.x -= charW;
-        if ( pt2.x >= -charW/2 )
-        {
-            pos2 += charW;
-            j++;
-        }
-    }
-#endif // __WXMAC__/!__WXMAC__
 
     pos1 = i;
     pos2 = j;
 
     wxASSERT( pos2 >= pos1 );
+
+    ext1 = pos1 == 0 ? 0 : (pos1 < widths.size() ? widths[pos1-1] : widths.Last());
+    ext2 = pos2 == 0 ? 0 : (pos2 < widths.size() ? widths[pos2-1] : widths.Last());
 }
 
 void wxHtmlWordCell::SetSelectionPrivPos(const wxDC& dc, wxHtmlSelection *s) const
 {
-    unsigned p1, p2;
+    unsigned p1, p2, ext1, ext2;
 
     Split(dc,
           this == s->GetFromCell() ? s->GetFromPos() : wxDefaultPosition,
           this == s->GetToCell() ? s->GetToPos() : wxDefaultPosition,
-          p1, p2);
+          p1, p2, ext1, ext2);
 
     if ( this == s->GetFromCell() )
-        s->SetFromCharacterPos (p1); // selection starts here
+    {
+        s->SetFromCharacterPos(p1); // selection starts here
+        s->SetExtentBeforeSelection(ext1);
+    }
     if ( this == s->GetToCell() )
-        s->SetToCharacterPos (p2); // selection ends here
+    {
+        s->SetToCharacterPos(p2); // selection ends here
+        s->SetExtentBeforeSelectionEnd(ext2);
+    }
 }
 
 
@@ -476,7 +477,7 @@ static void SwitchHighlightAndSelState(wxDC& dc, wxHtmlRenderingInfo& info,
 
     if ( toSelection )  // selection has priority over highlighted
     {
-        dc.SetBackgroundMode(wxSOLID);
+        dc.SetBackgroundMode(wxBRUSHSTYLE_SOLID);
         dc.SetTextForeground(info.GetStyle().GetSelectedTextColour(fg));
         dc.SetTextBackground(info.GetStyle().GetSelectedTextBgColour(bg));
         dc.SetBackground(info.GetStyle().GetSelectedTextBgColour(bg));
@@ -497,7 +498,7 @@ static void SwitchHighlightAndSelState(wxDC& dc, wxHtmlRenderingInfo& info,
         dc.SetBackgroundMode(mode);
         dc.SetTextForeground(fg);
         dc.SetTextBackground(bg);
-        if ( mode != wxTRANSPARENT )
+        if ( mode != wxBRUSHSTYLE_RANSPARENT )
             dc.SetBackground(wxBrush(bg));
 
         info.GetState().SetDcSetupFor(wxHtmlRenderingState::NormalState);
@@ -799,13 +800,22 @@ wxString wxHtmlWordWithTabsCell::GetPartAsText(int begin, int end) const
     return sel;
 }
 
+wxString wxHtmlWordCell::GetDescription() const
+{
+    wxString s;
+    s = wxString::Format("wxHtmlWordCell(%s)", m_Word);
+    if ( !m_allowLinebreak )
+        s += " no line break";
+
+    return s;
+}
 
 
 //-----------------------------------------------------------------------------
 // wxHtmlContainerCell
 //-----------------------------------------------------------------------------
 
-IMPLEMENT_ABSTRACT_CLASS(wxHtmlContainerCell, wxHtmlCell)
+wxIMPLEMENT_ABSTRACT_CLASS(wxHtmlContainerCell, wxHtmlCell);
 
 wxHtmlContainerCell::wxHtmlContainerCell(wxHtmlContainerCell *parent) : wxHtmlCell()
 {
@@ -817,7 +827,6 @@ wxHtmlContainerCell::wxHtmlContainerCell(wxHtmlContainerCell *parent) : wxHtmlCe
     m_AlignVer = wxHTML_ALIGN_BOTTOM;
     m_IndentLeft = m_IndentRight = m_IndentTop = m_IndentBottom = 0;
     m_WidthFloat = 100; m_WidthFloatUnits = wxHTML_UNITS_PERCENT;
-    m_BkColour = wxNullColour;
     m_Border = 0;
     m_MinHeight = 0;
     m_MinHeightAlign = wxHTML_ALIGN_TOP;
@@ -874,22 +883,18 @@ int wxHtmlContainerCell::GetIndentUnits(int ind) const
 
 
 bool
-wxHtmlContainerCell::AdjustPagebreak(int *pagebreak,
-                                     const wxArrayInt& known_pagebreaks,
-                                     int pageHeight) const
+wxHtmlContainerCell::AdjustPagebreak(int *pagebreak, int pageHeight) const
 {
     if (!m_CanLiveOnPagebreak)
-        return wxHtmlCell::AdjustPagebreak(pagebreak, known_pagebreaks, pageHeight);
+        return wxHtmlCell::AdjustPagebreak(pagebreak, pageHeight);
 
-    wxHtmlCell *c = GetFirstChild();
     bool rt = false;
     int pbrk = *pagebreak - m_PosY;
 
-    while (c)
+    for ( wxHtmlCell *c = GetFirstChild(); c; c = c->GetNext() )
     {
-        if (c->AdjustPagebreak(&pbrk, known_pagebreaks, pageHeight))
+        if (c->AdjustPagebreak(&pbrk, pageHeight))
             rt = true;
-        c = c->GetNext();
     }
     if (rt)
         *pagebreak = pbrk + m_PosY;
@@ -907,22 +912,15 @@ void wxHtmlContainerCell::Layout(int w)
 
     // VS: Any attempt to layout with negative or zero width leads to hell,
     // but we can't ignore such attempts completely, since it sometimes
-    // happen (e.g. when trying how small a table can be). The best thing we
-    // can do is to set the width of child cells to zero
+    // happen (e.g. when trying how small a table can be), so use at least one
+    // pixel width, this will at least give us the correct height sometimes.
     if (w < 1)
-    {
-       m_Width = 0;
-       for (wxHtmlCell *cell = m_Cells; cell; cell = cell->GetNext())
-            cell->Layout(0);
-            // this does two things: it recursively calls this code on all
-            // child contrainers and resets children's position to (0,0)
-       return;
-    }
+        w = 1;
 
     wxHtmlCell *nextCell;
     long xpos = 0, ypos = m_IndentTop;
-    int xdelta = 0, ybasicpos = 0, ydiff;
-    int s_width, nextWordWidth, s_indent;
+    int xdelta = 0, ybasicpos = 0;
+    int s_width, s_indent;
     int ysizeup = 0, ysizedown = 0;
     int MaxLineWidth = 0;
     int curLineWidth = 0;
@@ -975,6 +973,7 @@ void wxHtmlContainerCell::Layout(int w)
             case wxHTML_ALIGN_BOTTOM :   ybasicpos = - cell->GetHeight(); break;
             case wxHTML_ALIGN_CENTER :   ybasicpos = - cell->GetHeight() / 2; break;
         }
+        int ydiff;
         ydiff = cell->GetHeight() + ybasicpos;
 
         if (cell->GetDescent() + ydiff > ysizedown) ysizedown = cell->GetDescent() + ydiff;
@@ -989,8 +988,9 @@ void wxHtmlContainerCell::Layout(int w)
             if (curLineWidth > m_MaxTotalWidth)
                 m_MaxTotalWidth = curLineWidth;
 
-            if (wxMax(cell->GetWidth(), cell->GetMaxTotalWidth()) > m_MaxTotalWidth)
+            if (cell->GetMaxTotalWidth() > m_MaxTotalWidth)
                 m_MaxTotalWidth = cell->GetMaxTotalWidth();
+
             curLineWidth = 0;
         }
         else
@@ -1000,6 +1000,7 @@ void wxHtmlContainerCell::Layout(int w)
         cell = cell->GetNext();
 
         // compute length of the next word that would be added:
+        int nextWordWidth;
         nextWordWidth = 0;
         if (cell)
         {
@@ -1381,6 +1382,43 @@ void wxHtmlContainerCell::InsertCell(wxHtmlCell *f)
 
 
 
+void wxHtmlContainerCell::Detach(wxHtmlCell *cell)
+{
+    wxHtmlCell* const firstChild = GetFirstChild();
+    if ( cell == firstChild )
+    {
+        m_Cells = cell->GetNext();
+        if ( m_LastCell == cell )
+            m_LastCell = NULL;
+    }
+    else // Not the first child.
+    {
+        for ( wxHtmlCell* prev = firstChild;; )
+        {
+            wxHtmlCell* const next = prev->GetNext();
+
+            // We can't reach the end of the children list without finding this
+            // cell, normally.
+            wxCHECK_RET( next,  "Detaching cell which is not our child" );
+
+            if ( cell == next )
+            {
+                prev->SetNext(cell->GetNext());
+                if ( m_LastCell == cell )
+                    m_LastCell = prev;
+                break;
+            }
+
+            prev = next;
+        }
+    }
+
+    cell->SetParent(NULL);
+    cell->SetNext(NULL);
+}
+
+
+
 void wxHtmlContainerCell::SetAlign(const wxHtmlTag& tag)
 {
     wxString alg;
@@ -1507,9 +1545,9 @@ wxHtmlCell *wxHtmlContainerCell::GetFirstTerminal() const
 {
     if ( m_Cells )
     {
-        wxHtmlCell *c2;
         for (wxHtmlCell *c = m_Cells; c; c = c->GetNext())
         {
+            wxHtmlCell *c2;
             c2 = c->GetFirstTerminal();
             if ( c2 )
                 return c2;
@@ -1620,6 +1658,15 @@ void wxHtmlContainerCell::RemoveExtraSpacing(bool top, bool bottom)
     }
 }
 
+wxString wxHtmlContainerCell::Dump(int indent) const
+{
+    wxString s = wxHtmlCell::Dump(indent);
+
+    for ( wxHtmlCell* c = m_Cells; c; c = c->GetNext() )
+        s << "\n" << c->Dump(indent + 4);
+
+    return s;
+}
 
 
 
@@ -1627,7 +1674,7 @@ void wxHtmlContainerCell::RemoveExtraSpacing(bool top, bool bottom)
 // wxHtmlColourCell
 // --------------------------------------------------------------------------
 
-IMPLEMENT_ABSTRACT_CLASS(wxHtmlColourCell, wxHtmlCell)
+wxIMPLEMENT_ABSTRACT_CLASS(wxHtmlColourCell, wxHtmlCell);
 
 void wxHtmlColourCell::Draw(wxDC& dc,
                             int x, int y,
@@ -1654,26 +1701,30 @@ void wxHtmlColourCell::DrawInvisible(wxDC& dc,
     if (m_Flags & wxHTML_CLR_BACKGROUND)
     {
         state.SetBgColour(m_Colour);
-        state.SetBgMode(wxSOLID);
+        state.SetBgMode(wxBRUSHSTYLE_SOLID);
         const wxColour c = state.GetSelectionState() == wxHTML_SEL_IN
                          ? info.GetStyle().GetSelectedTextBgColour(m_Colour)
                          : m_Colour;
         dc.SetTextBackground(c);
         dc.SetBackground(c);
-        dc.SetBackgroundMode(wxSOLID);
+        dc.SetBackgroundMode(wxBRUSHSTYLE_SOLID);
     }
     if (m_Flags & wxHTML_CLR_TRANSPARENT_BACKGROUND)
     {
         state.SetBgColour(m_Colour);
-        state.SetBgMode(wxTRANSPARENT);
+        state.SetBgMode(wxBRUSHSTYLE_TRANSPARENT);
         const wxColour c = state.GetSelectionState() == wxHTML_SEL_IN
                          ? info.GetStyle().GetSelectedTextBgColour(m_Colour)
                          : m_Colour;
         dc.SetTextBackground(c);
-        dc.SetBackgroundMode(wxTRANSPARENT);
+        dc.SetBackgroundMode(wxBRUSHSTYLE_TRANSPARENT);
     }
 }
 
+wxString wxHtmlColourCell::GetDescription() const
+{
+    return wxString::Format("wxHtmlColourCell(%s)", m_Colour.GetAsString());
+}
 
 
 
@@ -1681,7 +1732,7 @@ void wxHtmlColourCell::DrawInvisible(wxDC& dc,
 // wxHtmlFontCell
 // ---------------------------------------------------------------------------
 
-IMPLEMENT_ABSTRACT_CLASS(wxHtmlFontCell, wxHtmlCell)
+wxIMPLEMENT_ABSTRACT_CLASS(wxHtmlFontCell, wxHtmlCell);
 
 void wxHtmlFontCell::Draw(wxDC& dc,
                           int WXUNUSED(x), int WXUNUSED(y),
@@ -1698,6 +1749,10 @@ void wxHtmlFontCell::DrawInvisible(wxDC& dc, int WXUNUSED(x), int WXUNUSED(y),
 }
 
 
+wxString wxHtmlFontCell::GetDescription() const
+{
+    return wxString::Format("wxHtmlFontCell(%s)", m_Font.GetNativeFontInfoUserDesc());
+}
 
 
 
@@ -1708,7 +1763,7 @@ void wxHtmlFontCell::DrawInvisible(wxDC& dc, int WXUNUSED(x), int WXUNUSED(y),
 // wxHtmlWidgetCell
 // ---------------------------------------------------------------------------
 
-IMPLEMENT_ABSTRACT_CLASS(wxHtmlWidgetCell, wxHtmlCell)
+wxIMPLEMENT_ABSTRACT_CLASS(wxHtmlWidgetCell, wxHtmlCell);
 
 wxHtmlWidgetCell::wxHtmlWidgetCell(wxWindow *wnd, int w)
 {

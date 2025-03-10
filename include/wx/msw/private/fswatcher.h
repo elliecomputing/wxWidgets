@@ -206,7 +206,8 @@ public:
     {
         wxCHECK_MSG( m_iocp != INVALID_HANDLE_VALUE, false, "IOCP not init" );
 
-        int ret = PostQueuedCompletionStatus(m_iocp, 0, 0, NULL);
+        // The special values of 0 will make GetStatus() return Status_Exit.
+        const int ret = PostQueuedCompletionStatus(m_iocp, 0, 0, NULL);
         if (!ret)
         {
             wxLogSysError(_("Unable to post completion status"));
@@ -215,25 +216,52 @@ public:
         return ret != 0;
     }
 
+    // Possible return values of GetStatus()
+    enum Status
+    {
+        // Status successfully retrieved into the provided arguments.
+        Status_OK,
+
+        // Special status indicating that we should exit retrieved.
+        Status_Exit,
+
+        // An error occurred because the watched directory was deleted.
+        Status_Deleted,
+
+        // Some other error occurred.
+        Status_Error
+    };
+
     // Wait for completion status to arrive.
     // This function can block forever in it's wait for completion status.
     // Use PostEmptyStatus() to wake it up (and end the worker thread)
-    bool GetStatus(unsigned long* count, wxFSWatchEntryMSW** watch,
-                   OVERLAPPED** overlapped)
+    Status
+    GetStatus(DWORD* count, wxFSWatchEntryMSW** watch,
+              OVERLAPPED** overlapped)
     {
-        wxCHECK_MSG( m_iocp != INVALID_HANDLE_VALUE, false, "IOCP not init" );
-        wxCHECK_MSG( count != NULL, false, "Null out parameter 'count'");
-        wxCHECK_MSG( watch != NULL, false, "Null out parameter 'watch'");
-        wxCHECK_MSG( overlapped != NULL, false,
-                     "Null out parameter 'overlapped'");
+        wxCHECK_MSG( m_iocp != INVALID_HANDLE_VALUE, Status_Error,
+                     "Invalid IOCP object" );
+        wxCHECK_MSG( count && watch && overlapped, Status_Error,
+                     "Output parameters can't be NULL" );
 
-        int ret = GetQueuedCompletionStatus(m_iocp, count, (ULONG_PTR *)watch,
+        const int ret = GetQueuedCompletionStatus(m_iocp, count, (ULONG_PTR *)watch,
                                             overlapped, INFINITE);
-        if (!ret)
+        if ( ret != 0 )
         {
-            wxLogSysError(_("Unable to dequeue completion packet"));
+            return *count || *watch || *overlapped ? Status_OK : Status_Exit;
         }
-        return ret != 0;
+
+        // An error is returned if the underlying directory has been deleted,
+        // but this is not really an unexpected failure, so handle it
+        // specially.
+        if ( wxSysErrorCode() == ERROR_ACCESS_DENIED &&
+                *watch && !wxFileName::DirExists((*watch)->GetPath()) )
+            return Status_Deleted;
+
+        // Some other error, at least log it.
+        wxLogSysError(_("Unable to dequeue completion packet"));
+
+        return Status_Error;
     }
 
 protected:
@@ -269,22 +297,22 @@ public:
 
 protected:
     // structure to hold information needed to process one native event
-    // this is just a dummy holder, so it doesn't take ownership of it's data
+    // this is just a dummy holder, so it doesn't take ownership of its data
     struct wxEventProcessingData
     {
         wxEventProcessingData(const FILE_NOTIFY_INFORMATION* ne,
-                              const wxFSWatchEntryMSW* watch) :
-            nativeEvent(ne), watch(watch)
+                              const wxFSWatchEntryMSW* watch_) :
+            nativeEvent(ne), watch(watch_)
         {}
 
         const FILE_NOTIFY_INFORMATION* nativeEvent;
         const wxFSWatchEntryMSW* watch;
     };
 
-    virtual ExitCode Entry();
+    virtual ExitCode Entry() wxOVERRIDE;
 
     // wait for events to occur, read them and send to interested parties
-    // returns false it empty status was read, which means we whould exit
+    // returns false it empty status was read, which means we would exit
     //         true otherwise
     bool ReadEvents();
 

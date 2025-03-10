@@ -9,9 +9,6 @@
 
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 #ifndef WX_PRECOMP
     #include "wx/wx.h"
 #endif
@@ -51,7 +48,9 @@ private:
     void OnAdd(wxCommandEvent& event);
     void OnAddTree(wxCommandEvent& event);
     void OnRemove(wxCommandEvent& event);
+    void OnRemoveAll(wxCommandEvent& WXUNUSED(event));
     void OnRemoveUpdateUI(wxUpdateUIEvent& event);
+    void OnRemoveAllUpdateUI(wxUpdateUIEvent& event);
 
     void OnFileSystemEvent(wxFileSystemWatcherEvent& event);
     void LogEvent(const wxFileSystemWatcherEvent& event);
@@ -71,7 +70,7 @@ class MyApp : public wxApp
 {
 public:
     // 'Main program' equivalent: the program execution "starts" here
-    virtual bool OnInit()
+    virtual bool OnInit() wxOVERRIDE
     {
         if ( !wxApp::OnInit() )
             return false;
@@ -87,7 +86,7 @@ public:
     }
 
     // create the file system watcher here, because it needs an active loop
-    virtual void OnEventLoopEnter(wxEventLoopBase* WXUNUSED(loop))
+    virtual void OnEventLoopEnter(wxEventLoopBase* WXUNUSED(loop)) wxOVERRIDE
     {
         if ( m_frame->CreateWatcherIfNecessary() )
         {
@@ -96,7 +95,7 @@ public:
         }
     }
 
-    virtual void OnInitCmdLine(wxCmdLineParser& parser)
+    virtual void OnInitCmdLine(wxCmdLineParser& parser) wxOVERRIDE
     {
         wxApp::OnInitCmdLine(parser);
         parser.AddParam("directory to watch",
@@ -104,7 +103,7 @@ public:
                         wxCMD_LINE_PARAM_OPTIONAL);
     }
 
-    virtual bool OnCmdLineParsed(wxCmdLineParser& parser)
+    virtual bool OnCmdLineParsed(wxCmdLineParser& parser) wxOVERRIDE
     {
         if ( !wxApp::OnCmdLineParsed(parser) )
             return false;
@@ -127,7 +126,7 @@ private:
 // static object for many reasons) and also declares the accessor function
 // wxGetApp() which will return the reference of the right type (i.e. MyApp and
 // not wxApp)
-IMPLEMENT_APP(MyApp)
+wxIMPLEMENT_APP(MyApp);
 
 
 // ============================================================================
@@ -151,7 +150,8 @@ MyFrame::MyFrame(const wxString& title)
 
         BTN_ID_ADD = 200,
         BTN_ID_ADD_TREE,
-        BTN_ID_REMOVE
+        BTN_ID_REMOVE,
+        BTN_ID_REMOVE_ALL
     };
 
     // ================================================================
@@ -177,8 +177,7 @@ MyFrame::MyFrame(const wxString& title)
                                   _("If checked, dereference symlinks")
                                  );
     it->Check(false);
-    Connect(MENU_ID_DEREFERENCE, wxEVT_MENU,
-            wxCommandEventHandler(MyFrame::OnFollowLinks));
+    Bind(wxEVT_MENU, &MyFrame::OnFollowLinks, this, MENU_ID_DEREFERENCE);
 #endif // __UNIX__
 
     // the "About" item should be in the help menu
@@ -215,10 +214,12 @@ MyFrame::MyFrame(const wxString& title)
     wxButton* buttonAdd = new wxButton(panel, BTN_ID_ADD, "&Add");
     wxButton* buttonAddTree = new wxButton(panel, BTN_ID_ADD_TREE, "Add &tree");
     wxButton* buttonRemove = new wxButton(panel, BTN_ID_REMOVE, "&Remove");
+    wxButton* buttonRemoveAll = new wxButton(panel, BTN_ID_REMOVE_ALL, "Remove a&ll");
     wxSizer *btnSizer = new wxGridSizer(2);
     btnSizer->Add(buttonAdd, wxSizerFlags().Center().Border(wxALL));
     btnSizer->Add(buttonAddTree, wxSizerFlags().Center().Border(wxALL));
     btnSizer->Add(buttonRemove, wxSizerFlags().Center().Border(wxALL));
+    btnSizer->Add(buttonRemoveAll, wxSizerFlags().Center().Border(wxALL));
 
     // and put it all together
     leftSizer->Add(btnSizer, wxSizerFlags(0).Expand());
@@ -240,8 +241,7 @@ MyFrame::MyFrame(const wxString& title)
                                wxTE_MULTILINE|wxTE_READONLY|wxHSCROLL);
 
     // set monospace font to have output in nice columns
-    wxFont font(9, wxFONTFAMILY_TELETYPE,
-                wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
+    wxFont font(wxFontInfo(9).Family(wxFONTFAMILY_TELETYPE));
     headerText->SetFont(font);
     m_evtConsole->SetFont(font);
 
@@ -262,24 +262,18 @@ MyFrame::MyFrame(const wxString& title)
     // event handlers & show
 
     // menu
-    Connect(MENU_ID_CLEAR, wxEVT_MENU,
-            wxCommandEventHandler(MyFrame::OnClear));
-    Connect(MENU_ID_QUIT, wxEVT_MENU,
-            wxCommandEventHandler(MyFrame::OnQuit));
-    Connect(MENU_ID_WATCH, wxEVT_MENU,
-            wxCommandEventHandler(MyFrame::OnWatch));
-    Connect(wxID_ABOUT, wxEVT_MENU,
-            wxCommandEventHandler(MyFrame::OnAbout));
+    Bind(wxEVT_MENU, &MyFrame::OnClear, this, MENU_ID_CLEAR);
+    Bind(wxEVT_MENU, &MyFrame::OnQuit, this, MENU_ID_QUIT);
+    Bind(wxEVT_MENU, &MyFrame::OnWatch, this, MENU_ID_WATCH);
+    Bind(wxEVT_MENU, &MyFrame::OnAbout, this, wxID_ABOUT);
 
     // buttons
-    Connect(BTN_ID_ADD, wxEVT_BUTTON,
-            wxCommandEventHandler(MyFrame::OnAdd));
-    Connect(BTN_ID_ADD_TREE, wxEVT_BUTTON,
-            wxCommandEventHandler(MyFrame::OnAddTree));
-    Connect(BTN_ID_REMOVE, wxEVT_BUTTON,
-            wxCommandEventHandler(MyFrame::OnRemove));
-    Connect(BTN_ID_REMOVE, wxEVT_UPDATE_UI,
-            wxUpdateUIEventHandler(MyFrame::OnRemoveUpdateUI));
+    Bind(wxEVT_BUTTON, &MyFrame::OnAdd, this, BTN_ID_ADD);
+    Bind(wxEVT_BUTTON, &MyFrame::OnAddTree, this, BTN_ID_ADD_TREE);
+    Bind(wxEVT_BUTTON, &MyFrame::OnRemove, this, BTN_ID_REMOVE);
+    Bind(wxEVT_UPDATE_UI, &MyFrame::OnRemoveUpdateUI, this, BTN_ID_REMOVE);
+    Bind(wxEVT_BUTTON, &MyFrame::OnRemoveAll, this, BTN_ID_REMOVE_ALL);
+    Bind(wxEVT_UPDATE_UI, &MyFrame::OnRemoveAllUpdateUI, this, BTN_ID_REMOVE_ALL);
 
     // and show itself (the frames, unlike simple controls, are not shown when
     // created initially)
@@ -297,8 +291,7 @@ bool MyFrame::CreateWatcherIfNecessary()
         return false;
 
     CreateWatcher();
-    Connect(wxEVT_FSWATCHER,
-            wxFileSystemWatcherEventHandler(MyFrame::OnFileSystemEvent));
+    Bind(wxEVT_FSWATCHER, &MyFrame::OnFileSystemEvent, this);
 
     return true;
 }
@@ -453,9 +446,24 @@ void MyFrame::OnRemove(wxCommandEvent& WXUNUSED(event))
     }
 }
 
+void MyFrame::OnRemoveAll(wxCommandEvent& WXUNUSED(event))
+{
+    if ( !m_watcher->RemoveAll() )
+    {
+        wxLogError("Error removing all paths from watched paths");
+    }
+
+    m_filesList->DeleteAllItems();
+}
+
 void MyFrame::OnRemoveUpdateUI(wxUpdateUIEvent& event)
 {
     event.Enable(m_filesList->GetFirstSelected() != wxNOT_FOUND);
+}
+
+void MyFrame::OnRemoveAllUpdateUI(wxUpdateUIEvent& event)
+{
+    event.Enable( m_filesList->GetItemCount() != 0 );
 }
 
 void MyFrame::OnFileSystemEvent(wxFileSystemWatcherEvent& event)

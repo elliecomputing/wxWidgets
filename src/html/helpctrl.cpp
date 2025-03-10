@@ -11,10 +11,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-#pragma hdrstop
-#endif
-
 #if wxUSE_WXHTML_HELP
 
 #ifndef WX_PRECOMP
@@ -37,7 +33,7 @@
 FORCE_LINK(wxhtml_chm_support)
 #endif
 
-IMPLEMENT_DYNAMIC_CLASS(wxHtmlHelpController, wxHelpControllerBase)
+wxIMPLEMENT_DYNAMIC_CLASS(wxHtmlHelpController, wxHelpControllerBase);
 
 wxHtmlHelpController::wxHtmlHelpController(int style, wxWindow* parentWindow):
     wxHelpControllerBase(parentWindow)
@@ -58,7 +54,7 @@ void wxHtmlHelpController::Init(int style)
     m_helpDialog = NULL;
 #if wxUSE_CONFIG
     m_Config = NULL;
-    m_ConfigRoot = wxEmptyString;
+    m_ConfigRoot.clear();
 #endif // wxUSE_CONFIG
     m_titleFormat = _("Help: %s");
     m_FrameStyle = style;

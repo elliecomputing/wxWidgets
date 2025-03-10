@@ -8,10 +8,6 @@
 
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-#pragma hdrstop
-#endif
-
 #if wxUSE_FS_ARCHIVE
 
 #include "wx/fs_arc.h"
@@ -186,7 +182,7 @@ wxArchiveFSEntry *wxArchiveFSCacheDataImpl::GetNext(wxArchiveFSEntry *fse)
 //---------------------------------------------------------------------------
 // wxArchiveFSCacheData
 //
-// This is the inteface for wxArchiveFSCacheDataImpl above. Holds the catalog
+// This is the interface for wxArchiveFSCacheDataImpl above. Holds the catalog
 // of an archive file, and if it is being read from a non-seekable stream, a
 // copy of its backing file.
 //---------------------------------------------------------------------------
@@ -305,14 +301,13 @@ wxArchiveFSCacheData *wxArchiveFSCache::Get(const wxString& name)
 // wxArchiveFSHandler
 //----------------------------------------------------------------------------
 
-IMPLEMENT_DYNAMIC_CLASS(wxArchiveFSHandler, wxFileSystemHandler)
+wxIMPLEMENT_DYNAMIC_CLASS(wxArchiveFSHandler, wxFileSystemHandler);
 
 wxArchiveFSHandler::wxArchiveFSHandler()
  :  wxFileSystemHandler()
 {
     m_Archive = NULL;
     m_FindEntry = NULL;
-    m_ZipFile = m_Pattern = m_BaseDir = wxEmptyString;
     m_AllowDirs = m_AllowFiles = true;
     m_DirsFound = NULL;
     m_cache = NULL;
@@ -477,9 +472,9 @@ wxString wxArchiveFSHandler::FindNext()
 wxString wxArchiveFSHandler::DoFind()
 {
     wxString namestr, dir, filename;
-    wxString match = wxEmptyString;
+    wxString match;
 
-    while (match == wxEmptyString)
+    while (match.empty())
     {
         m_FindEntry = m_Archive->GetNext(m_FindEntry);
 
@@ -506,7 +501,7 @@ wxString wxArchiveFSHandler::DoFind()
                         match = m_ZipFile + dir + wxT("/") + filename;
                 }
                 else
-                    break; // already tranversed
+                    break; // already transversed
             }
         }
 

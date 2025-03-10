@@ -1,5 +1,5 @@
 /////////////////////////////////////////////////////////////////////////////
-// Name:        src/xrc/xh_toolb.cpp
+// Name:        src/xrc/xh_auitoolb.cpp
 // Purpose:     XRC resource for wxAuiToolBar
 // Author:      Vaclav Slavik
 // Created:     2000/08/11
@@ -10,9 +10,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_XRC && wxUSE_AUI
 
@@ -27,13 +24,14 @@
 
 #include "wx/xrc/xh_auitoolb.h"
 
-IMPLEMENT_DYNAMIC_CLASS(wxAuiToolBarXmlHandler, wxXmlResourceHandler)
+wxIMPLEMENT_DYNAMIC_CLASS(wxAuiToolBarXmlHandler, wxXmlResourceHandler);
 
 wxAuiToolBarXmlHandler::wxAuiToolBarXmlHandler()
     : wxXmlResourceHandler()
     , m_isInside(false)
     , m_toolbar(NULL)
 {
+    XRC_ADD_STYLE(wxAUI_TB_DEFAULT_STYLE);
     XRC_ADD_STYLE(wxAUI_TB_TEXT);
     XRC_ADD_STYLE(wxAUI_TB_NO_TOOLTIPS);
     XRC_ADD_STYLE(wxAUI_TB_NO_AUTORESIZE);
@@ -114,8 +112,8 @@ wxObject *wxAuiToolBarXmlHandler::DoCreateResource()
                        (
                           GetID(),
                           GetText(wxS("label")),
-                          GetBitmap(wxS("bitmap"), wxART_TOOLBAR, m_toolSize),
-                          GetBitmap(wxS("bitmap2"), wxART_TOOLBAR, m_toolSize),
+                          GetBitmapBundle(wxS("bitmap"), wxART_TOOLBAR, m_toolSize),
+                          GetBitmapBundle(wxS("bitmap2"), wxART_TOOLBAR, m_toolSize),
                           kind,
                           GetText(wxS("tooltip")),
                           GetText(wxS("longhelp")),
@@ -136,7 +134,7 @@ wxObject *wxAuiToolBarXmlHandler::DoCreateResource()
         return m_toolbar; // must return non-NULL
     }
 
-    else if (m_class == wxS("separator") || m_class == wxS("space"))
+    else if (m_class == wxS("separator") || m_class == wxS("space") || m_class == wxS("label"))
     {
         if ( !m_toolbar )
         {
@@ -146,8 +144,43 @@ wxObject *wxAuiToolBarXmlHandler::DoCreateResource()
 
         if ( m_class == wxS("separator") )
             m_toolbar->AddSeparator();
-        else
-            m_toolbar->AddStretchSpacer();
+
+        else if (m_class == wxS("space"))
+        {
+            // This may be a stretch spacer (the default) or a non-stretch one
+            bool hasProportion = HasParam(wxS("proportion"));
+            bool hasWidth = HasParam(wxS("width"));
+            if (hasProportion && hasWidth)
+            {
+                ReportError("A space can't both stretch and have width");
+                return NULL;
+            }
+
+            if (hasWidth)
+            {
+                m_toolbar->AddSpacer
+                (
+                    GetLong(wxS("width"))
+                );
+            }
+            else
+            {
+                m_toolbar->AddStretchSpacer
+                (
+                    GetLong(wxS("proportion"), 1l)
+                );
+            }
+        }
+
+        else if (m_class == wxS("label"))
+        {
+            m_toolbar->AddLabel
+            (
+                GetID(),
+                GetText(wxS("label")),
+                GetLong(wxS("width"), -1l)
+            );
+        }
 
         return m_toolbar; // must return non-NULL
     }
@@ -169,9 +202,10 @@ wxObject *wxAuiToolBarXmlHandler::DoCreateResource()
         toolbar->SetName(GetName());
         SetupWindow(toolbar);
 
-        m_toolSize = GetSize(wxS("bitmapsize"));
+        // See comment for the same code in the wxToolBar XRC handler.
+        m_toolSize = GetPairInts(wxS("bitmapsize"));
         if (!(m_toolSize == wxDefaultSize))
-            toolbar->SetToolBitmapSize(m_toolSize);
+            toolbar->SetToolBitmapSize(toolbar->FromDIP(m_toolSize));
         wxSize margins = GetSize(wxS("margins"));
         if (!(margins == wxDefaultSize))
             toolbar->SetMargins(margins.x, margins.y);
@@ -201,6 +235,7 @@ wxObject *wxAuiToolBarXmlHandler::DoCreateResource()
                 wxControl *control = wxDynamicCast(created, wxControl);
                 if (!IsOfClass(n, wxS("tool")) &&
                     !IsOfClass(n, wxS("separator")) &&
+                    !IsOfClass(n, wxS("label")) &&
                     !IsOfClass(n, wxS("space")) &&
                     control != NULL)
                     toolbar->AddControl(control);
@@ -221,6 +256,7 @@ bool wxAuiToolBarXmlHandler::CanHandle(wxXmlNode *node)
 {
     return ((!m_isInside && IsOfClass(node, wxS("wxAuiToolBar"))) ||
             (m_isInside && IsOfClass(node, wxS("tool"))) ||
+            (m_isInside && IsOfClass(node, wxS("label"))) ||
             (m_isInside && IsOfClass(node, wxS("space"))) ||
             (m_isInside && IsOfClass(node, wxS("separator"))));
 }
@@ -239,7 +275,7 @@ void wxAuiToolBarXmlHandler::MenuHandler::OnDropDown(wxAuiToolBarEvent& event)
                 if (menu != NULL)
                 {
                     wxRect rect = item->GetSizerItem()->GetRect();
-                    toobar->PopupMenu(menu, rect.GetRight() - 10, rect.GetBottom());
+                    toobar->PopupMenu(menu, rect.GetRight() - toobar->FromDIP(10), rect.GetBottom());
                 }
             }
         }

@@ -36,6 +36,9 @@ public:
     wxPen( const wxColour &colour, int width = 1, wxPenStyle style = wxPENSTYLE_SOLID );
 
     wxPen( const wxBitmap &stipple, int width );
+
+    wxPen( const wxPenInfo& info );
+
     virtual ~wxPen();
 
     bool operator == ( const wxPen& pen ) const;
@@ -70,7 +73,7 @@ protected:
     virtual wxGDIRefData *CreateGDIRefData() const;
     virtual wxGDIRefData *CloneGDIRefData(const wxGDIRefData *data) const;
 
-    DECLARE_DYNAMIC_CLASS(wxPen)
+    wxDECLARE_DYNAMIC_CLASS(wxPen);
 };
 
 #endif // _WX_PEN_H_

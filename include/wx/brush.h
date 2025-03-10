@@ -41,6 +41,7 @@ enum wxBrushStyle
 class WXDLLIMPEXP_CORE wxBrushBase: public wxGDIObject
 {
 public:
+    wxDECLARE_DEFAULT_COPY_AND_DEF(wxBrushBase)
     virtual ~wxBrushBase() { }
 
     virtual void SetColour(const wxColour& col) = 0;
@@ -81,10 +82,8 @@ public:
     #include "wx/dfb/brush.h"
 #elif defined(__WXMAC__)
     #include "wx/osx/brush.h"
-#elif defined(__WXCOCOA__)
-    #include "wx/cocoa/brush.h"
-#elif defined(__WXPM__)
-    #include "wx/os2/brush.h"
+#elif defined(__WXQT__)
+    #include "wx/qt/brush.h"
 #endif
 
 class WXDLLIMPEXP_CORE wxBrushList: public wxGDIObjListBase
@@ -107,11 +106,6 @@ extern WXDLLIMPEXP_DATA_CORE(wxBrushList*)   wxTheBrushList;
 // to compile without warnings which it would otherwise provoke from some
 // compilers as it compares elements of different enums
 
-// Unfortunately some compilers have ambiguity issues when enum comparisons are
-// overloaded so we have to disable the overloads in this case, see
-// wxCOMPILER_NO_OVERLOAD_ON_ENUM definition in wx/platform.h for more details.
-#ifndef wxCOMPILER_NO_OVERLOAD_ON_ENUM
-
 wxDEPRECATED_MSG("use wxBRUSHSTYLE_XXX constants only")
 inline bool operator==(wxBrushStyle s, wxDeprecatedGUIConstants t)
 {
@@ -123,7 +117,5 @@ inline bool operator!=(wxBrushStyle s, wxDeprecatedGUIConstants t)
 {
     return static_cast<int>(s) != static_cast<int>(t);
 }
-
-#endif // wxCOMPILER_NO_OVERLOAD_ON_ENUM
 
 #endif // _WX_BRUSH_H_BASE_

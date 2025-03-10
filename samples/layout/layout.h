@@ -12,8 +12,8 @@
 class MyApp: public wxApp
 {
 public:
-    MyApp(){};
-    bool OnInit();
+    MyApp(){}
+    bool OnInit() wxOVERRIDE;
 };
 
 // the main frame class
@@ -34,7 +34,7 @@ public:
     void OnQuit(wxCommandEvent& event);
 
 private:
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_EVENT_TABLE();
 };
 
 // a frame showing the box sizer proportions
@@ -64,11 +64,11 @@ private:
 };
 
 
-// a dialog using notebook sizer for layout
-class MySizerDialog : public wxDialog
+// a dialog using notebook and sizers for layout
+class MyNotebookWithSizerDialog : public wxDialog
 {
 public:
-    MySizerDialog(wxWindow *parent, const wxString &title );
+    MyNotebookWithSizerDialog(wxWindow *parent, const wxString &title );
 };
 
 
@@ -93,7 +93,7 @@ private:
     wxButton*           m_moveBtn2;
     wxGBPosition        m_lastPos;
 
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_EVENT_TABLE();
 };
 
 
@@ -109,7 +109,7 @@ public:
 private:
     wxTextCtrl  *m_target;
 
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_EVENT_TABLE();
 };
 
 
@@ -142,7 +142,7 @@ private:
     wxWindow* m_checkboxParent;
     wxSizer* m_wrapSizer;
 
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_EVENT_TABLE();
 };
 
 // controls and menu constants

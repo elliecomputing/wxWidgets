@@ -27,9 +27,9 @@ public:
 
 protected:
     // create the GTK dialog
-    virtual bool DoCreate(wxWindow *parent);
+    virtual bool DoCreate(wxWindow *parent) wxOVERRIDE;
 
-    DECLARE_DYNAMIC_CLASS(wxFontDialog)
+    wxDECLARE_DYNAMIC_CLASS(wxFontDialog);
 };
 
 #endif

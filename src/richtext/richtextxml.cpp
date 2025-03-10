@@ -11,9 +11,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_RICHTEXT && wxUSE_XML
 
@@ -60,7 +57,7 @@
 // Set to 1 to time file saving
 #define wxRICHTEXT_USE_OUTPUT_TIMINGS 0
 
-IMPLEMENT_DYNAMIC_CLASS(wxRichTextXMLHandler, wxRichTextFileHandler)
+wxIMPLEMENT_DYNAMIC_CLASS(wxRichTextXMLHandler, wxRichTextFileHandler);
 
 wxStringToStringHashMap wxRichTextXMLHandler::sm_nodeNameToClassMap;
 
@@ -423,6 +420,38 @@ bool wxRichTextPlainText::ImportFromXML(wxRichTextBuffer* buffer, wxXmlNode* nod
     {
         wxString text;
         wxXmlNode* textChild = node->GetChildren();
+
+        // First skip past properties, if any.
+        wxXmlNode* n = textChild;
+        while (n)
+        {
+            // Skip past properties
+            if ((n->GetType() == wxXML_ELEMENT_NODE) && n->GetName() == wxT("properties"))
+            {
+                textChild = n->GetNext();
+                n = NULL;
+
+                // Skip past the whitespace after the properties
+                while (textChild && (textChild->GetType() == wxXML_TEXT_NODE))
+                {
+                    wxString cText = textChild->GetContent();
+                    cText.Trim(true);
+                    cText.Trim(false);
+                    if (!cText.IsEmpty())
+                    {
+                        textChild->SetContent(cText);
+                        break;
+                    }
+                    else
+                        textChild = textChild->GetNext();
+                }
+
+                break;
+            }
+            if (n)
+                n = n->GetNext();
+        }
+
         while (textChild)
         {
             if (textChild->GetType() == wxXML_TEXT_NODE ||
@@ -503,7 +532,10 @@ bool wxRichTextPlainText::ExportXML(wxOutputStream& stream, int indent, wxRichTe
 #else
         int c = (int) wxUChar(text[i]);
 #endif
-        if ((c < 32 || c == 34) && /* c != 9 && */ c != 10 && c != 13)
+        if (((c < 32 || c == 34) && /* c != 9 && */ c != 10 && c != 13)
+            // XML ranges
+            || (!(c >= 32 && c <= 55295) && !(c >= 57344 && c <= 65533))
+            )
         {
             if (i > 0)
             {
@@ -804,8 +836,6 @@ bool wxRichTextImage::ExportXML(wxXmlNode* parent, wxRichTextXMLHandler* handler
                 strData = wxString((const char*) data, wxConvUTF8, size);
                 delete[] data;
             }
-            else
-                strData = wxEmptyString;
         }
 
     }
@@ -1048,7 +1078,7 @@ void wxRichTextXMLHelper::Clear()
     m_convMem = NULL;
     m_deleteConvFile = false;
 #endif
-    m_fileEncoding = wxEmptyString;
+    m_fileEncoding.clear();
 }
 
 void wxRichTextXMLHelper::SetupForSaving(const wxString& enc)
@@ -1261,7 +1291,7 @@ wxString wxRichTextXMLHelper::MakeStringFromProperty(const wxVariant& var)
     return var.MakeString();
 }
 
-// Create a proprty from the string read from the XML file.
+// Create a property from the string read from the XML file.
 wxVariant wxRichTextXMLHelper::MakePropertyFromString(const wxString& name, const wxString& value, const wxString& WXUNUSED(type))
 {
     wxVariant var(value, name);
@@ -2000,7 +2030,7 @@ void wxRichTextXMLHelper::AddAttribute(wxString& str, const wxString& name, cons
 
 void wxRichTextXMLHelper::AddAttribute(wxString& str, const wxString& name, const double& v)
 {
-    str << wxT(" ") << name << wxT("=\"") << wxString::Format(wxT("%.2f"), (float) v) << wxT("\"");
+    str << wxS(" ") << name << wxS("=\"") << wxString::Format(wxS("%.2f"), v) << wxS("\"");
 }
 
 void wxRichTextXMLHelper::AddAttribute(wxString& str, const wxString& name, const wxChar* s)
@@ -2352,11 +2382,11 @@ bool wxRichTextXMLHelper::ExportStyleDefinition(wxOutputStream& stream, wxRichTe
             wxRichTextAttr* levelAttr = listDef->GetLevelAttributes(i);
             if (levelAttr)
             {
-                wxString style = AddAttributes(def->GetStyle(), true);
+                wxString levelStyle = AddAttributes(def->GetStyle(), true);
                 wxString levelStr = wxString::Format(wxT(" level=\"%d\" "), (i+1));
 
                 OutputIndentation(stream, level);
-                OutputString(stream, wxT("<style ") + levelStr + style + wxT(">"));
+                OutputString(stream, wxT("<style ") + levelStr + levelStyle + wxT(">"));
 
                 OutputIndentation(stream, level);
                 OutputString(stream, wxT("</style>"));

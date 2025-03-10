@@ -74,7 +74,7 @@ private:
     // pointer to the next object in the linked list or NULL
     Function * const m_next;
 
-    DECLARE_NO_COPY_CLASS(Function)
+    wxDECLARE_NO_COPY_CLASS(Function);
 };
 
 /**
@@ -83,7 +83,7 @@ private:
     Tests may use this parameter in whatever way they see fit, by default it is
     1 but can be set to a different value by user from the command line.
  */
-long GetNumericParameter();
+long GetNumericParameter(long defValue = 1);
 
 /**
     Get the string parameter.
@@ -91,7 +91,7 @@ long GetNumericParameter();
     Tests may use this parameter in whatever way they see fit, by default it is
     empty but can be set to a different value by user from the command line.
  */
-wxString GetStringParameter();
+wxString GetStringParameter(const wxString& defValue = wxString());
 
 } // namespace Bench
 

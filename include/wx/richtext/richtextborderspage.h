@@ -48,8 +48,8 @@ class WXDLLIMPEXP_FWD_RICHTEXT wxRichTextBorderPreviewCtrl;
 
 class WXDLLIMPEXP_RICHTEXT wxRichTextBordersPage: public wxRichTextDialogPage
 {
-    DECLARE_DYNAMIC_CLASS( wxRichTextBordersPage )
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_DYNAMIC_CLASS(wxRichTextBordersPage);
+    wxDECLARE_EVENT_TABLE();
     DECLARE_HELP_PROVISION()
 
 public:
@@ -73,8 +73,8 @@ public:
     wxRichTextAttr* GetAttributes();
 
     /// Data transfer
-    virtual bool TransferDataToWindow();
-    virtual bool TransferDataFromWindow();
+    virtual bool TransferDataToWindow() wxOVERRIDE;
+    virtual bool TransferDataFromWindow() wxOVERRIDE;
 
     /// Updates the synchronization checkboxes to reflect the state of the attributes
     void UpdateSyncControls();
@@ -295,7 +295,7 @@ private:
     wxRichTextAttr* m_attributes;
 
     void OnPaint(wxPaintEvent& event);
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_EVENT_TABLE();
 };
 
 #endif

@@ -17,9 +17,6 @@
 
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #ifndef __WINDOWS__
     #error "This sample is Windows-only"
@@ -51,7 +48,7 @@ public:
 
     void OnAbout(wxCommandEvent& event);
 
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_EVENT_TABLE();
 };
 
 
@@ -77,9 +74,9 @@ private:
 // MyDllFrame
 // ----------------------------------------------------------------------------
 
-BEGIN_EVENT_TABLE(MyDllFrame, wxFrame)
+wxBEGIN_EVENT_TABLE(MyDllFrame, wxFrame)
     EVT_BUTTON(wxID_ABOUT, MyDllFrame::OnAbout)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 MyDllFrame::MyDllFrame(wxWindow *parent, const wxString& label)
     : wxFrame(parent, wxID_ANY, label)
@@ -147,12 +144,8 @@ MyDllApp::MyDllApp()
     // by shutting the thread down when it's no longer needed, though.
     SetExitOnFrameDelete(false);
 
-    Connect(CMD_SHOW_WINDOW,
-            wxEVT_THREAD,
-            wxThreadEventHandler(MyDllApp::OnShowWindow));
-    Connect(CMD_TERMINATE,
-            wxEVT_THREAD,
-            wxThreadEventHandler(MyDllApp::OnTerminate));
+    Bind(wxEVT_THREAD, &MyDllApp::OnShowWindow, this, CMD_SHOW_WINDOW);
+    Bind(wxEVT_THREAD, &MyDllApp::OnTerminate, this, CMD_TERMINATE);
 }
 
 void MyDllApp::OnShowWindow(wxThreadEvent& event)
@@ -172,7 +165,7 @@ void MyDllApp::OnTerminate(wxThreadEvent& WXUNUSED(event))
 // ----------------------------------------------------------------------------
 
 // we can't have WinMain() in a DLL and want to start the app ourselves
-IMPLEMENT_APP_NO_MAIN(MyDllApp)
+wxIMPLEMENT_APP_NO_MAIN(MyDllApp);
 
 namespace
 {
@@ -202,7 +195,7 @@ unsigned wxSTDCALL MyAppLauncher(void* event)
     if ( !hInstance )
         return 0; // failed to get DLL's handle
 
-    // IMPLEMENT_WXWIN_MAIN does this as the first thing
+    // wxIMPLEMENT_WXWIN_MAIN does this as the first thing
     wxDISABLE_DEBUG_SUPPORT();
 
     // We do this before wxEntry() explicitly, even though wxEntry() would

@@ -10,9 +10,6 @@
 // For compilers that support precompilation, includes "wx/wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-#pragma hdrstop
-#endif
 
 // for all others, include the necessary headers (this file is usually all you
 // need because it includes almost all "standard" wxWidgets headers
@@ -44,7 +41,7 @@ public:
     // initialization (doing it here and not in the ctor allows to have an error
     // return: if OnInit() returns false, the application terminates)
 
-    virtual bool OnInit();
+    virtual bool OnInit() wxOVERRIDE;
 };
 
 // Define a new frame type: this is going to be our main frame
@@ -76,7 +73,7 @@ private:
     wxString m_Name;
 
     // any class wishing to process wxWidgets events must use this macro
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_EVENT_TABLE();
 };
 
 // ----------------------------------------------------------------------------
@@ -105,7 +102,7 @@ enum
 // the event tables connect the wxWidgets events with the functions (event
 // handlers) which process them. It can be also done at run-time, but for the
 // simple menu events like this the static method is much simpler.
-BEGIN_EVENT_TABLE(MyFrame, wxFrame)
+wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
     EVT_MENU(Minimal_Quit, MyFrame::OnQuit)
     EVT_MENU(wxID_ABOUT, MyFrame::OnAbout)
     EVT_MENU(Minimal_Print, MyFrame::OnPrint)
@@ -115,14 +112,14 @@ BEGIN_EVENT_TABLE(MyFrame, wxFrame)
     EVT_MENU(Minimal_PrintSmall, MyFrame::OnPrintSmall)
     EVT_MENU(Minimal_PrintNormal, MyFrame::OnPrintNormal)
     EVT_MENU(Minimal_PrintHuge, MyFrame::OnPrintHuge)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 // Create a new application object: this macro will allow wxWidgets to create
 // the application object during program execution (it's better than using a
 // static object for many reasons) and also declares the accessor function
 // wxGetApp() which will return the reference of the right type (i.e. MyApp and
 // not wxApp)
-IMPLEMENT_APP(MyApp)
+wxIMPLEMENT_APP(MyApp);
 
 // ============================================================================
 // implementation
@@ -205,15 +202,15 @@ MyFrame::MyFrame(const wxString& title, const wxPoint& pos, const wxSize& size)
 #if wxUSE_STATUSBAR
     m_Html -> SetRelatedStatusBar(0);
 #endif // wxUSE_STATUSBAR
-    m_Name = wxT("test.htm");
+    m_Name = "test.htm";
     m_Html -> LoadPage(m_Name);
 
     m_Prn = new wxHtmlEasyPrinting(_("Easy Printing Demo"), this);
-    m_Prn -> SetHeader(m_Name + wxT("(@PAGENUM@/@PAGESCNT@)<hr>"), wxPAGE_ALL);
+    m_Prn -> SetHeader(m_Name + "(@PAGENUM@/@PAGESCNT@)<hr>", wxPAGE_ALL);
 
     // To specify where the AFM files are kept on Unix,
     // you may wish to do something like this
-    // m_Prn->GetPrintData()->SetFontMetricPath(wxT("/home/julians/afm"));
+    // m_Prn->GetPrintData()->SetFontMetricPath("/home/julians/afm");
 }
 
 // frame destructor
@@ -258,13 +255,13 @@ void MyFrame::OnPreview(wxCommandEvent& WXUNUSED(event))
 
 void MyFrame::OnOpen(wxCommandEvent& WXUNUSED(event))
 {
-    wxFileDialog dialog(this, _("Open HTML page"), wxT(""), wxT(""), wxT("*.htm"), 0);
+    wxFileDialog dialog(this, _("Open HTML page"), "", "", "*.htm", 0);
 
     if (dialog.ShowModal() == wxID_OK)
     {
         m_Name = dialog.GetPath();
         m_Html -> LoadPage(m_Name);
-        m_Prn -> SetHeader(m_Name + wxT("(@PAGENUM@/@PAGESCNT@)<hr>"), wxPAGE_ALL);
+        m_Prn -> SetHeader(m_Name + "(@PAGENUM@/@PAGESCNT@)<hr>", wxPAGE_ALL);
     }
 }
 

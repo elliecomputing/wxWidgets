@@ -9,9 +9,6 @@
 
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
     #include "wx/wx.h"
@@ -49,7 +46,7 @@ public:
         SetVirtualSize( WIDTH, HEIGHT );
         SetBackgroundColour( *wxWHITE );
 
-        Connect(wxEVT_PAINT, wxPaintEventHandler(MySimpleCanvas::OnPaint));
+        Bind(wxEVT_PAINT, &MySimpleCanvas::OnPaint, this);
     }
 
 private:
@@ -106,7 +103,7 @@ private:
 
     wxButton *m_button;
 
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_EVENT_TABLE();
 };
 
 class MyCanvasFrame : public wxFrame
@@ -125,10 +122,8 @@ public:
         mbar->Append(menuFile, "&File");
         SetMenuBar( mbar );
 
-        Connect(wxID_DELETE, wxEVT_MENU,
-                wxCommandEventHandler(MyCanvasFrame::OnDeleteAll));
-        Connect(wxID_NEW, wxEVT_MENU,
-                wxCommandEventHandler(MyCanvasFrame::OnInsertNew));
+        Bind(wxEVT_MENU, &MyCanvasFrame::OnDeleteAll, this, wxID_DELETE);
+        Bind(wxEVT_MENU, &MyCanvasFrame::OnInsertNew, this, wxID_NEW);
 
         Show();
     }
@@ -197,7 +192,7 @@ public:
     {
         m_owner = parent;
 
-        Connect(wxEVT_PAINT, wxPaintEventHandler(MySubColLabels::OnPaint));
+        Bind(wxEVT_PAINT, &MySubColLabels::OnPaint, this);
     }
 
 private:
@@ -232,7 +227,7 @@ public:
     {
         m_owner = parent;
 
-        Connect(wxEVT_PAINT, wxPaintEventHandler(MySubRowLabels::OnPaint));
+        Bind(wxEVT_PAINT, &MySubRowLabels::OnPaint, this);
     }
 
 private:
@@ -289,12 +284,12 @@ public:
 
         SetBackgroundColour("WHEAT");
 
-        Connect(wxEVT_PAINT, wxPaintEventHandler(MySubCanvas::OnPaint));
+        Bind(wxEVT_PAINT, &MySubCanvas::OnPaint, this);
     }
 
     // override the base class function so that when this window is scrolled,
     // the labels are scrolled in sync
-    virtual void ScrollWindow(int dx, int dy, const wxRect *rect)
+    virtual void ScrollWindow(int dx, int dy, const wxRect *rect) wxOVERRIDE
     {
         wxPanel::ScrollWindow( dx, dy, rect );
         m_colLabels->ScrollWindow( dx, 0, rect );
@@ -330,7 +325,7 @@ private:
         GetClientSize( &size_x, &size_y );
 
         // First cell: (0,0)(100,25)
-        // It it on screen?
+        // Is it on screen?
         if ((0+100-scroll_x > 0) && (0+25-scroll_y > 0) &&
             (0-scroll_x < size_x) && (0-scroll_y < size_y))
         {
@@ -344,7 +339,7 @@ private:
 
 
         // Second cell: (200,0)(100,25)
-        // It it on screen?
+        // Is it on screen?
         if ((200+100-scroll_x > 0) && (0+25-scroll_y > 0) &&
             (200-scroll_x < size_x) && (0-scroll_y < size_y))
         {
@@ -396,13 +391,13 @@ public:
 
         SetScrollbars(10, 10, 50, 50);
 
-        Connect(wxEVT_SIZE, wxSizeEventHandler(MySubScrolledWindow::OnSize));
+        Bind(wxEVT_SIZE, &MySubScrolledWindow::OnSize, this);
     }
 
 protected:
     // scrolled windows which use scroll target different from the window
     // itself must override this virtual method
-    virtual wxSize GetSizeAvailableForScrollTarget(const wxSize& size)
+    virtual wxSize GetSizeAvailableForScrollTarget(const wxSize& size) wxOVERRIDE
     {
         // decrease the total size by the size of the non-scrollable parts
         // above/to the left of the canvas
@@ -473,7 +468,7 @@ public:
         DoSyncIfNecessary();
     }
 
-    virtual void ScrollWindow(int dx, int dy, const wxRect *rect = NULL)
+    virtual void ScrollWindow(int dx, int dy, const wxRect *rect = NULL) wxOVERRIDE
     {
         wxScrolled<wxWindow>::ScrollWindow(dx, dy, rect);
 
@@ -523,7 +518,7 @@ public:
         SetScrollbars(0, m_hLine, 0, m_nLines + 1, 0, 0, true /* no refresh */);
     }
 
-    virtual void OnDraw(wxDC& dc);
+    virtual void OnDraw(wxDC& dc) wxOVERRIDE;
 };
 
 // this class does "smart" redrawing - only redraws the lines which must be
@@ -542,7 +537,7 @@ public:
         SetVirtualSize( wxDefaultCoord, ( m_nLines + 1 ) * m_hLine );
     }
 
-    virtual void OnDraw(wxDC& dc);
+    virtual void OnDraw(wxDC& dc) wxOVERRIDE;
 };
 
 // ----------------------------------------------------------------------------
@@ -567,7 +562,7 @@ public:
 
 private:
     // event handlers
-    void OnDraw(wxDC& dc);
+    void OnDraw(wxDC& dc) wxOVERRIDE;
     void OnMouseLeftDown(wxMouseEvent& event);
     void OnMouseLeftUp(wxMouseEvent& event);
     void OnMouseMove(wxMouseEvent& event);
@@ -588,7 +583,7 @@ private:
     wxFont m_font;
 
 
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_EVENT_TABLE();
 };
 
 class MyAutoFrame : public wxFrame
@@ -629,7 +624,7 @@ private:
     MyScrolledWindowBase *m_win1,
                          *m_win2;
 
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_EVENT_TABLE();
 };
 
 // ----------------------------------------------------------------------------
@@ -639,7 +634,7 @@ private:
 class MyApp : public wxApp
 {
 public:
-    virtual bool OnInit();
+    virtual bool OnInit() wxOVERRIDE;
 };
 
 
@@ -659,7 +654,7 @@ const wxWindowIDRef ID_QUERYPOS    = wxWindow::NewControlId();
 
 const wxWindowIDRef ID_NEWBUTTON   = wxWindow::NewControlId();
 
-BEGIN_EVENT_TABLE(MyCanvas, wxScrolled<wxPanel>)
+wxBEGIN_EVENT_TABLE(MyCanvas, wxScrolled<wxPanel>)
     EVT_PAINT(                  MyCanvas::OnPaint)
     EVT_RIGHT_DOWN(             MyCanvas::OnMouseRightDown)
     EVT_MOUSEWHEEL(             MyCanvas::OnMouseWheel)
@@ -668,7 +663,7 @@ BEGIN_EVENT_TABLE(MyCanvas, wxScrolled<wxPanel>)
     EVT_BUTTON( ID_DELBUTTON,   MyCanvas::OnDeleteButton)
     EVT_BUTTON( ID_MOVEBUTTON,  MyCanvas::OnMoveButton)
     EVT_BUTTON( ID_SCROLLWIN,   MyCanvas::OnScrollWin)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 MyCanvas::MyCanvas(wxWindow *parent)
     : wxScrolled<wxPanel>(parent, wxID_ANY,
@@ -710,9 +705,10 @@ void MyCanvas::OnMouseWheel( wxMouseEvent &event )
     int x,y;
     CalcUnscrolledPosition( pt.x, pt.y, &x, &y );
     wxLogMessage( "Mouse wheel event at: %d %d, scrolled: %d %d\n"
-                  "Rotation: %d, delta = %d",
+                  "Rotation: %d, delta: %d, inverted: %d",
                   pt.x, pt.y, x, y,
-                  event.GetWheelRotation(), event.GetWheelDelta() );
+                  event.GetWheelRotation(), event.GetWheelDelta(),
+                  event.IsWheelInverted() );
 
     event.Skip();
 }
@@ -808,8 +804,8 @@ MySizerScrolledWindow::MySizerScrolledWindow(wxWindow *parent)
 
     SetSizer( sizer );
 
-    Connect(wxID_RESIZE_FRAME, wxEVT_BUTTON,
-            wxCommandEventHandler(MySizerScrolledWindow::OnResizeClick));
+    Bind(wxEVT_BUTTON, &MySizerScrolledWindow::OnResizeClick, this,
+         wxID_RESIZE_FRAME);
 }
 
 void MySizerScrolledWindow::OnResizeClick(wxCommandEvent &WXUNUSED(event))
@@ -840,7 +836,7 @@ const wxWindowID Scroll_Test_Auto   = wxWindow::NewControlId();
 const wxWindowID Scroll_TglBtn_Sync = wxWindow::NewControlId();
 const wxWindowID Scroll_Radio_ShowScrollbar = wxWindow::NewControlId();
 
-BEGIN_EVENT_TABLE(MyFrame,wxFrame)
+wxBEGIN_EVENT_TABLE(MyFrame,wxFrame)
     EVT_MENU(wxID_ABOUT, MyFrame::OnAbout)
     EVT_MENU(wxID_EXIT,  MyFrame::OnQuit)
 
@@ -852,7 +848,7 @@ BEGIN_EVENT_TABLE(MyFrame,wxFrame)
 
     EVT_TOGGLEBUTTON(Scroll_TglBtn_Sync, MyFrame::OnToggleSync)
     EVT_RADIOBOX(Scroll_Radio_ShowScrollbar, MyFrame::OnScrollbarVisibility)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 MyFrame::MyFrame()
        : wxFrame(NULL, wxID_ANY, "wxWidgets scroll sample")
@@ -978,7 +974,7 @@ void MyFrame::OnAbout( wxCommandEvent &WXUNUSED(event) )
 // MyApp
 // ----------------------------------------------------------------------------
 
-IMPLEMENT_APP(MyApp)
+wxIMPLEMENT_APP(MyApp);
 
 bool MyApp::OnInit()
 {
@@ -1045,13 +1041,13 @@ void MyScrolledWindowSmart::OnDraw(wxDC& dc)
 // MyAutoScrollingWindow
 // ----------------------------------------------------------------------------
 
-BEGIN_EVENT_TABLE(MyAutoScrollingWindow, wxScrolled<wxWindow>)
+wxBEGIN_EVENT_TABLE(MyAutoScrollingWindow, wxScrolled<wxWindow>)
     EVT_LEFT_DOWN(MyAutoScrollingWindow::OnMouseLeftDown)
     EVT_LEFT_UP(MyAutoScrollingWindow::OnMouseLeftUp)
     EVT_MOTION(MyAutoScrollingWindow::OnMouseMove)
     EVT_MOUSE_CAPTURE_LOST(MyAutoScrollingWindow::OnMouseCaptureLost)
     EVT_SCROLLWIN(MyAutoScrollingWindow::OnScroll)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 MyAutoScrollingWindow::MyAutoScrollingWindow(wxWindow* parent)
     : wxScrolled<wxWindow>(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize,

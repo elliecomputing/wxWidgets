@@ -13,9 +13,6 @@
 // For compilers that support precompilation, includes "wx/wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 // For all others, include the necessary headers (this file is usually all you
 // need because it includes almost all "standard" wxWidgets headers)
@@ -33,18 +30,18 @@
 // Remaining headers: Needed wx headers, then wx/contrib headers, then application headers
 //-----------------------------------------------------------------------------
 
-#include "wx/xrc/xmlres.h"              // XRC XML resouces
+#include "wx/xrc/xmlres.h"              // XRC XML resources
 
 //-----------------------------------------------------------------------------
 // Event table: connect the events to the handler functions to process them
 //-----------------------------------------------------------------------------
 
-BEGIN_EVENT_TABLE(PreferencesDialog, wxDialog)
+wxBEGIN_EVENT_TABLE(PreferencesDialog, wxDialog)
     EVT_BUTTON( XRCID( "my_button" ), PreferencesDialog::OnMyButtonClicked )
     EVT_UPDATE_UI(XRCID( "my_checkbox" ), PreferencesDialog::OnUpdateUIMyCheckbox )
     // Note that the ID here isn't a XRCID, it is one of the standard wx ID's.
     EVT_BUTTON( wxID_OK, PreferencesDialog::OnOK )
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 //-----------------------------------------------------------------------------
 // Public members
@@ -52,7 +49,7 @@ END_EVENT_TABLE()
 // Constructor (Notice how small and easy it is)
 PreferencesDialog::PreferencesDialog(wxWindow* parent)
 {
-    wxXmlResource::Get()->LoadDialog(this, parent, wxT("derived_dialog"));
+    wxXmlResource::Get()->LoadDialog(this, parent, "derived_dialog");
 }
 
 //-----------------------------------------------------------------------------

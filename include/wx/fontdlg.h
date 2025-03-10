@@ -65,8 +65,6 @@ protected:
 
 #if defined(__WXUNIVERSAL__) || \
     defined(__WXMOTIF__)     || \
-    defined(__WXCOCOA__)     || \
-    defined(__WXWINCE__)     || \
     defined(__WXGPE__)
 
     #include "wx/generic/fontdlgg.h"
@@ -77,10 +75,10 @@ protected:
     #include "wx/gtk/fontdlg.h"
 #elif defined(__WXGTK__)
     #include "wx/gtk1/fontdlg.h"
-#elif defined(__WXPM__)
-    #include "wx/os2/fontdlg.h"
 #elif defined(__WXMAC__)
     #include "wx/osx/fontdlg.h"
+#elif defined(__WXQT__)
+    #include "wx/qt/fontdlg.h"
 #endif
 
 // ----------------------------------------------------------------------------

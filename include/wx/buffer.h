@@ -11,7 +11,7 @@
 #ifndef _WX_BUFFER_H
 #define _WX_BUFFER_H
 
-#include "wx/chartype.h"
+#include "wx/defs.h"
 #include "wx/wxcrtbase.h"
 
 #include <stdlib.h>             // malloc() and free()
@@ -152,7 +152,17 @@ public:
         DecRef();
     }
 
+    // For some reasong clang-tidy gives a warning about using freed memory
+    // here even when this is not at all the case, seemingly because it doesn't
+    // follow reference counting logic, i.e. it assumes that it's possible to
+    // delete the data even when it's still referenced.
+    //
+    // Suppress the warning as it's extremely annoying to get it for every use
+    // of wxCharBuffer.
+    //
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDelete)
     CharType *data() { return m_data->Get(); }
+    // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDelete)
     const CharType *data() const { return  m_data->Get(); }
     operator const CharType *() const { return data(); }
     CharType operator[](size_t n) const { return data()[n]; }
@@ -354,9 +364,6 @@ public:
     }
 };
 
-WXDLLIMPEXP_TEMPLATE_INSTANCE_BASE( wxScopedCharTypeBuffer<char> )
-WXDLLIMPEXP_TEMPLATE_INSTANCE_BASE( wxCharTypeBuffer<char> )
-
 class wxCharBuffer : public wxCharTypeBuffer<char>
 {
 public:
@@ -373,9 +380,6 @@ public:
 
     wxCharBuffer(const wxCStrData& cstr);
 };
-
-WXDLLIMPEXP_TEMPLATE_INSTANCE_BASE( wxScopedCharTypeBuffer<wchar_t> )
-WXDLLIMPEXP_TEMPLATE_INSTANCE_BASE( wxCharTypeBuffer<wchar_t> )
 
 class wxWCharBuffer : public wxCharTypeBuffer<wchar_t>
 {
@@ -464,13 +468,17 @@ private:
     {
         if (newSize > m_size)
         {
-            void *dataOld = m_data;
-            m_data = realloc(m_data, newSize + wxMemoryBufferData::DefBufSize);
-            if ( !m_data )
+            void* const data = realloc(m_data, newSize + wxMemoryBufferData::DefBufSize);
+            if ( !data )
             {
-                free(dataOld);
+                // It's better to crash immediately dereferencing a null
+                // pointer in the function calling us than overflowing the
+                // buffer which couldn't be made big enough.
+                free(release());
+                return;
             }
 
+            m_data = data;
             m_size = newSize + wxMemoryBufferData::DefBufSize;
         }
     }

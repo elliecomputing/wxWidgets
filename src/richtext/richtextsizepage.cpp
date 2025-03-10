@@ -17,14 +17,14 @@
  * wxRichTextSizePage type definition
  */
 
-IMPLEMENT_DYNAMIC_CLASS( wxRichTextSizePage, wxRichTextDialogPage )
+wxIMPLEMENT_DYNAMIC_CLASS(wxRichTextSizePage, wxRichTextDialogPage);
 
 
 /*!
  * wxRichTextSizePage event table definition
  */
 
-BEGIN_EVENT_TABLE( wxRichTextSizePage, wxRichTextDialogPage )
+wxBEGIN_EVENT_TABLE(wxRichTextSizePage, wxRichTextDialogPage)
 
 ////@begin wxRichTextSizePage event table entries
     EVT_UPDATE_UI( ID_RICHTEXT_VERTICAL_ALIGNMENT_COMBOBOX, wxRichTextSizePage::OnRichtextVerticalAlignmentComboboxUpdate )
@@ -52,7 +52,7 @@ BEGIN_EVENT_TABLE( wxRichTextSizePage, wxRichTextDialogPage )
     EVT_BUTTON( ID_RICHTEXT_PARA_DOWN, wxRichTextSizePage::OnRichtextParaDownClick )
 ////@end wxRichTextSizePage event table entries
 
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 IMPLEMENT_HELP_PROVISION(wxRichTextSizePage)
 
@@ -116,7 +116,7 @@ wxRichTextSizePage::~wxRichTextSizePage()
     sm_showAlignmentControls = true;
     sm_showFloatingAndAlignmentControls = true;
     sm_showMinMaxSizeControls = true;
-    sm_showMinMaxSizeControls = true;
+    sm_enablePositionAndSizeUnits = true;
     sm_enablePositionAndSizeCheckboxes = true;
     sm_showMoveObjectControls = true;
     
@@ -684,8 +684,10 @@ void wxRichTextSizePage::CreateControls()
         itemButton96->SetToolTip(_("Moves the object to the next paragraph."));
     m_moveObjectSizer->Add(itemButton96, 0, wxALIGN_CENTER_VERTICAL|wxRIGHT|wxTOP|wxBOTTOM, 5);
 
+#if wxUSE_VALIDATORS
     // Set validators
     m_positionModeCtrl->SetValidator( wxGenericValidator(& m_positionMode) );
+#endif
 ////@end wxRichTextSizePage content construction
 
     if (!sm_enablePositionAndSizeCheckboxes)

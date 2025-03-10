@@ -12,9 +12,6 @@
 
 #include "testprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
 #endif // WX_PRECOMP
@@ -40,14 +37,16 @@ private:
         CPPUNIT_TEST( ParseSwitches );
         CPPUNIT_TEST( ArgumentsCollection );
         CPPUNIT_TEST( Usage );
+        CPPUNIT_TEST( Found );
     CPPUNIT_TEST_SUITE_END();
 
     void ConvertStringTestCase();
     void ParseSwitches();
     void ArgumentsCollection();
     void Usage();
+    void Found();
 
-    DECLARE_NO_COPY_CLASS(CmdLineTestCase)
+    wxDECLARE_NO_COPY_CLASS(CmdLineTestCase);
 };
 
 // register in the unnamed registry so that these tests are run by default
@@ -55,6 +54,23 @@ CPPUNIT_TEST_SUITE_REGISTRATION( CmdLineTestCase );
 
 // also include in its own registry so that these tests can be run alone
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CmdLineTestCase, "CmdLineTestCase" );
+
+// Use this macro to compare a wxArrayString with the pipe-separated elements
+// of the given string
+//
+// NB: it's a macro and not a function to have the correct line numbers in the
+//     test failure messages
+#define WX_ASSERT_STRARRAY_EQUAL(s, a)                                        \
+    {                                                                         \
+        wxArrayString expected(wxSplit(s, '|', '\0'));                        \
+                                                                              \
+        CPPUNIT_ASSERT_EQUAL( expected.size(), a.size() );                    \
+                                                                              \
+        for ( size_t n = 0; n < a.size(); n++ )                               \
+        {                                                                     \
+            CPPUNIT_ASSERT_EQUAL( expected[n], a[n] );                        \
+        }                                                                     \
+    }
 
 // ============================================================================
 // implementation
@@ -131,7 +147,7 @@ void CmdLineTestCase::ParseSwitches()
     class NoMessageOutput : public wxMessageOutput
     {
     public:
-        virtual void Output(const wxString& WXUNUSED(str)) { }
+        virtual void Output(const wxString& WXUNUSED(str)) wxOVERRIDE { }
     } noMessages;
 
     wxMessageOutput * const old = wxMessageOutput::Set(&noMessages);
@@ -280,6 +296,8 @@ void CmdLineTestCase::ArgumentsCollection()
 
 void CmdLineTestCase::Usage()
 {
+    wxGCC_WARNING_SUPPRESS(missing-field-initializers)
+
     // check that Usage() returns roughly what we expect (don't check all the
     // details, its format can change in the future)
     static const wxCmdLineEntryDesc desc[] =
@@ -299,6 +317,8 @@ void CmdLineTestCase::Usage()
         { wxCMD_LINE_USAGE_TEXT, NULL, NULL, "\nEven more usage text" },
         { wxCMD_LINE_NONE }
     };
+
+    wxGCC_WARNING_RESTORE(missing-field-initializers)
 
     wxCmdLineParser p(desc);
     const wxArrayString usageLines = wxSplit(p.GetUsageString(), '\n');
@@ -320,9 +340,72 @@ void CmdLineTestCase::Usage()
         Line_Max
     };
 
-    CPPUNIT_ASSERT_EQUAL(Line_Max, usageLines.size());
+    CPPUNIT_ASSERT_EQUAL((size_t)Line_Max, usageLines.size());
     CPPUNIT_ASSERT_EQUAL("Verbosity options", usageLines[Line_Text_Verbosity]);
     CPPUNIT_ASSERT_EQUAL("", usageLines[Line_Text_Dummy1]);
     CPPUNIT_ASSERT_EQUAL("Even more usage text", usageLines[Line_Text_Dummy2]);
     CPPUNIT_ASSERT_EQUAL("", usageLines[Line_Last]);
+}
+
+void CmdLineTestCase::Found()
+{
+    wxGCC_WARNING_SUPPRESS(missing-field-initializers)
+
+    static const wxCmdLineEntryDesc desc[] =
+    {
+        { wxCMD_LINE_SWITCH, "v", "verbose", "be verbose" },
+        { wxCMD_LINE_OPTION, "o", "output",  "output file" },
+        { wxCMD_LINE_OPTION, "s", "size",    "output block size", wxCMD_LINE_VAL_NUMBER },
+        { wxCMD_LINE_OPTION, "d", "date",    "output file date", wxCMD_LINE_VAL_DATE },
+        { wxCMD_LINE_OPTION, "f", "double",  "output double", wxCMD_LINE_VAL_DOUBLE },
+        { wxCMD_LINE_PARAM,  NULL, NULL, "input file", },
+        { wxCMD_LINE_NONE }
+    };
+
+    wxGCC_WARNING_RESTORE(missing-field-initializers)
+
+    wxCmdLineParser p(desc);
+    p.SetCmdLine ("-v --output hello -s 2 --date=2014-02-17 -f 0.2 input-file.txt");
+
+    CPPUNIT_ASSERT(p.Parse() == 0);
+
+    wxString dummys;
+    wxDateTime dummydate;
+    long dummyl;
+    double dummyd;
+    // now verify that any option/switch badly queried actually generates an exception
+    WX_ASSERT_FAILS_WITH_ASSERT(p.Found("v", &dummyd));
+    WX_ASSERT_FAILS_WITH_ASSERT(p.Found("v", &dummydate));
+    WX_ASSERT_FAILS_WITH_ASSERT(p.Found("v", &dummyl));
+    WX_ASSERT_FAILS_WITH_ASSERT(p.Found("v", &dummys));
+    CPPUNIT_ASSERT(p.FoundSwitch("v") != wxCMD_SWITCH_NOT_FOUND);
+    CPPUNIT_ASSERT(p.Found("v"));
+
+    WX_ASSERT_FAILS_WITH_ASSERT(p.Found("o", &dummyd));
+    WX_ASSERT_FAILS_WITH_ASSERT(p.Found("o", &dummydate));
+    WX_ASSERT_FAILS_WITH_ASSERT(p.Found("o", &dummyl));
+    WX_ASSERT_FAILS_WITH_ASSERT(p.FoundSwitch("o"));
+    CPPUNIT_ASSERT(p.Found("o", &dummys));
+    CPPUNIT_ASSERT(p.Found("o"));
+
+    WX_ASSERT_FAILS_WITH_ASSERT(p.Found("s", &dummyd));
+    WX_ASSERT_FAILS_WITH_ASSERT(p.Found("s", &dummydate));
+    WX_ASSERT_FAILS_WITH_ASSERT(p.Found("s", &dummys));
+    WX_ASSERT_FAILS_WITH_ASSERT(p.FoundSwitch("s"));
+    CPPUNIT_ASSERT(p.Found("s", &dummyl));
+    CPPUNIT_ASSERT(p.Found("s"));
+
+    WX_ASSERT_FAILS_WITH_ASSERT(p.Found("d", &dummyd));
+    WX_ASSERT_FAILS_WITH_ASSERT(p.Found("d", &dummyl));
+    WX_ASSERT_FAILS_WITH_ASSERT(p.Found("d", &dummys));
+    WX_ASSERT_FAILS_WITH_ASSERT(p.FoundSwitch("d"));
+    CPPUNIT_ASSERT(p.Found("d", &dummydate));
+    CPPUNIT_ASSERT(p.Found("d"));
+
+    WX_ASSERT_FAILS_WITH_ASSERT(p.Found("f", &dummydate));
+    WX_ASSERT_FAILS_WITH_ASSERT(p.Found("f", &dummyl));
+    WX_ASSERT_FAILS_WITH_ASSERT(p.Found("f", &dummys));
+    WX_ASSERT_FAILS_WITH_ASSERT(p.FoundSwitch("f"));
+    CPPUNIT_ASSERT(p.Found("f", &dummyd));
+    CPPUNIT_ASSERT(p.Found("f"));
 }

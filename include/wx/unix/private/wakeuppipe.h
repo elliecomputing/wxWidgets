@@ -44,9 +44,9 @@ public:
 
 
     // Implement wxEventLoopSourceHandler pure virtual methods
-    virtual void OnReadWaiting();
-    virtual void OnWriteWaiting() { }
-    virtual void OnExceptionWaiting() { }
+    virtual void OnReadWaiting() wxOVERRIDE;
+    virtual void OnWriteWaiting() wxOVERRIDE { }
+    virtual void OnExceptionWaiting() wxOVERRIDE { }
 
 private:
     wxPipe m_pipe;
@@ -64,10 +64,10 @@ private:
 
 // This class can be used from multiple threads, i.e. its WakeUp() can be
 // called concurrently.
-#if wxUSE_THREADS
 
 class wxWakeUpPipeMT : public wxWakeUpPipe
 {
+#if wxUSE_THREADS
 public:
     wxWakeUpPipeMT() { }
 
@@ -80,7 +80,7 @@ public:
         WakeUpNoLock();
     }
 
-    virtual void OnReadWaiting()
+    virtual void OnReadWaiting() wxOVERRIDE
     {
         wxCriticalSectionLocker lock(m_pipeLock);
 
@@ -90,12 +90,8 @@ public:
 private:
     // Protects access to m_pipeIsEmpty.
     wxCriticalSection m_pipeLock;
+
+#endif // wxUSE_THREADS
 };
-
-#else // !wxUSE_THREADS
-
-typedef wxWakeUpPipe wxWakeUpPipeMT;
-
-#endif // wxUSE_THREADS/!wxUSE_THREADS
 
 #endif // _WX_UNIX_PRIVATE_WAKEUPPIPE_H_

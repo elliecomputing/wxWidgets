@@ -17,13 +17,13 @@
  * wxRichTextListStylePage type definition
  */
 
-IMPLEMENT_DYNAMIC_CLASS( wxRichTextListStylePage, wxRichTextDialogPage )
+wxIMPLEMENT_DYNAMIC_CLASS(wxRichTextListStylePage, wxRichTextDialogPage);
 
 /*!
  * wxRichTextListStylePage event table definition
  */
 
-BEGIN_EVENT_TABLE( wxRichTextListStylePage, wxRichTextDialogPage )
+wxBEGIN_EVENT_TABLE(wxRichTextListStylePage, wxRichTextDialogPage)
 
 ////@begin wxRichTextListStylePage event table entries
     EVT_SPINCTRL( ID_RICHTEXTLISTSTYLEPAGE_LEVEL, wxRichTextListStylePage::OnLevelUpdated )
@@ -90,7 +90,7 @@ BEGIN_EVENT_TABLE( wxRichTextListStylePage, wxRichTextDialogPage )
 
 ////@end wxRichTextListStylePage event table entries
 
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 IMPLEMENT_HELP_PROVISION(wxRichTextListStylePage)
 
@@ -549,7 +549,6 @@ iaculis malesuada. Donec bibendum ipsum ut ante porta fringilla.\n");
     m_previewCtrl->EndStyle();
 
     m_previewCtrl->BeginStyle(attr);
-    long listStart = m_previewCtrl->GetInsertionPoint() + 1;
 
     int i;
     for (i = 0; i < 10; i++)
@@ -561,13 +560,10 @@ iaculis malesuada. Donec bibendum ipsum ut ante porta fringilla.\n");
         m_previewCtrl->EndStyle();
     }
     m_previewCtrl->EndStyle();
-    long listEnd = m_previewCtrl->GetInsertionPoint();
 
     m_previewCtrl->BeginStyle(normalParaAttr);
     m_previewCtrl->WriteText(s_para3);
     m_previewCtrl->EndStyle();
-
-    m_previewCtrl->NumberList(wxRichTextRange(listStart, listEnd), def);
 
     m_previewCtrl->Thaw();
 }
@@ -697,7 +693,10 @@ bool wxRichTextListStylePage::TransferDataFromWindow()
 
     // if (m_hasBulletSymbol)
     {
-        attr->SetBulletText(m_symbolCtrl->GetValue());
+        if (!m_symbolCtrl->GetValue().IsEmpty())
+            attr->SetBulletText(m_symbolCtrl->GetValue());
+        else
+            attr->SetFlags(attr->GetFlags() & ~wxTEXT_ATTR_BULLET_TEXT);
         attr->SetBulletFont(m_symbolFontCtrl->GetValue());
     }
 

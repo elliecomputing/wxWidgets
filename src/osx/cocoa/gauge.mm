@@ -50,19 +50,19 @@ public :
     {
     }
 
-    void SetMaximum(wxInt32 v)
+    void SetMaximum(wxInt32 v) wxOVERRIDE
     {
         SetDeterminateMode();
         wxWidgetCocoaImpl::SetMaximum( v ) ;
     }
 
-    void SetValue(wxInt32 v)
+    void SetValue(wxInt32 v) wxOVERRIDE
     {
         SetDeterminateMode();
         wxWidgetCocoaImpl::SetValue( v ) ;
     }
 
-    void PulseGauge()
+    void PulseGauge() wxOVERRIDE
     {
         if ( ![(wxNSProgressIndicator*)m_osxView isIndeterminate] )
         {
@@ -71,26 +71,6 @@ public :
         }
     }
 
-    void GetLayoutInset(int &left , int &top , int &right, int &bottom) const
-    {
-        left = top = right = bottom = 0;
-        NSControlSize size = [(wxNSProgressIndicator*)m_osxView controlSize];
-
-        switch( size )
-        {
-            case NSRegularControlSize:
-                left = right = 2;
-                top = 0;
-                bottom = 4;
-                break;
-            case NSMiniControlSize:
-            case NSSmallControlSize:
-                left = right = 1;
-                top = 0;
-                bottom = 2;
-                break;
-        }
-    }
 protected:
     void SetDeterminateMode()
     {
@@ -113,7 +93,7 @@ wxWidgetImplType* wxWidgetImpl::CreateGauge( wxWindowMac* wxpeer,
                                     wxInt32 maximum,
                                     const wxPoint& pos,
                                     const wxSize& size,
-                                    long WXUNUSED(style),
+                                    long style,
                                     long WXUNUSED(extraStyle))
 {
     NSRect r = wxOSXGetFrameForControl( wxpeer, pos , size ) ;
@@ -123,6 +103,10 @@ wxWidgetImplType* wxWidgetImpl::CreateGauge( wxWindowMac* wxpeer,
     [v setMaxValue: maximum];
     [v setIndeterminate:FALSE];
     [v setDoubleValue: (double) value];
+    if (style & wxGA_VERTICAL)
+    {
+        [v setBoundsRotation:-90.0];
+    }
     wxWidgetCocoaImpl* c = new wxOSXGaugeCocoaImpl( wxpeer, v );
     return c;
 }

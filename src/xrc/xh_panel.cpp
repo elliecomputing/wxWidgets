@@ -10,9 +10,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_XRC
 
@@ -23,7 +20,7 @@
     #include "wx/frame.h"
 #endif
 
-IMPLEMENT_DYNAMIC_CLASS(wxPanelXmlHandler, wxXmlResourceHandler)
+wxIMPLEMENT_DYNAMIC_CLASS(wxPanelXmlHandler, wxXmlResourceHandler);
 
 wxPanelXmlHandler::wxPanelXmlHandler() : wxXmlResourceHandler()
 {

@@ -43,17 +43,20 @@ private:
     void OnDerivedDialogToolOrMenuCommand(wxCommandEvent& event);
     void OnControlsToolOrMenuCommand(wxCommandEvent& event);
     void OnUncenteredToolOrMenuCommand(wxCommandEvent& event);
+    void OnMultipleAccels(wxCommandEvent& event);
     void OnAuiDemoToolOrMenuCommand(wxCommandEvent& event);
     void OnObjRefToolOrMenuCommand(wxCommandEvent& event);
     void OnCustomClassToolOrMenuCommand(wxCommandEvent& event);
     void OnPlatformPropertyToolOrMenuCommand(wxCommandEvent& event);
     void OnArtProviderToolOrMenuCommand(wxCommandEvent& event);
     void OnVariableExpansionToolOrMenuCommand(wxCommandEvent& event);
+    void OnVariants(wxCommandEvent& event);
     void OnRecursiveLoad(wxCommandEvent& event);
     void OnAnimationCtrlPlay(wxCommandEvent& event);
+    void OnInfoBarShowMessage(wxCommandEvent& event);
 
     // Any class wishing to process wxWidgets events must use this macro
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_EVENT_TABLE();
 
 };
 

@@ -51,7 +51,7 @@ public:
             Window position.
             If ::wxDefaultPosition is specified then a default position is chosen.
         @param size
-            Window size. 
+            Window size.
             If ::wxDefaultSize is specified then the choice is sized appropriately.
         @param n
             Number of strings with which to initialise the choice control.
@@ -118,7 +118,7 @@ public:
     */
     virtual ~wxChoice();
 
-    //@{
+    ///@{
     /**
         Creates the choice for two-step construction. See wxChoice().
     */
@@ -136,7 +136,7 @@ public:
             long style = 0,
             const wxValidator& validator = wxDefaultValidator,
             const wxString& name = wxChoiceNameStr );
-    //@}
+    ///@}
 
     /**
         Gets the number of columns in this choice item.
@@ -148,8 +148,8 @@ public:
 
     /**
         Unlike wxControlWithItems::GetSelection() which only returns the
-        accepted selection value, i.e. the selection in the control once the
-        user closes the dropdown list, this function returns the current
+        accepted selection value (the selection in the control once the
+        user closes the dropdown list), this function returns the current
         selection. That is, while the dropdown list is shown, it returns the
         currently selected item in it. When it is not shown, its result is the
         same as for the other function.
@@ -172,7 +172,7 @@ public:
     virtual void SetColumns(int n = 1);
 
     virtual bool IsSorted() const;
-    
+
     virtual unsigned int GetCount() const ;
     virtual int GetSelection() const ;
     virtual void SetSelection(int n);

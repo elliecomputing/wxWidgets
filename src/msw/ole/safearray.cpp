@@ -18,9 +18,6 @@
 // for compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_OLE && wxUSE_VARIANT
 
@@ -74,7 +71,7 @@ bool wxSafeArrayBase::GetLBound(size_t dim, long& bound) const
     wxCHECK_MSG( m_array, false, wxS("Uninitialized safe array") );
     wxCHECK_MSG( dim > 0, false, wxS("Invalid dimension index") );
 
-    HRESULT hr = SafeArrayGetLBound(m_array, dim, &bound);
+    HRESULT hr = SafeArrayGetLBound(m_array, dim, (LONG*)&bound);
     if ( FAILED(hr) )
     {
         wxLogApiError(wxS("SafeArrayGetLBound()"), hr);
@@ -88,7 +85,7 @@ bool wxSafeArrayBase::GetUBound(size_t dim, long& bound) const
     wxCHECK_MSG( m_array, false, wxS("Uninitialized safe array") );
     wxCHECK_MSG( dim > 0, false, wxS("Invalid dimension index") );
 
-    HRESULT hr = SafeArrayGetUBound(m_array, dim, &bound);
+    HRESULT hr = SafeArrayGetUBound(m_array, dim, (LONG*)&bound);
     if ( FAILED(hr) )
     {
         wxLogApiError(wxS("SafeArrayGetUBound()"), hr);

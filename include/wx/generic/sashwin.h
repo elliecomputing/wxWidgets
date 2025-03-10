@@ -35,7 +35,7 @@ enum wxSashEdgePosition {
  * wxSashEdge represents one of the four edges of a window.
  */
 
-class WXDLLIMPEXP_ADV wxSashEdge
+class WXDLLIMPEXP_CORE wxSashEdge
 {
 public:
     wxSashEdge()
@@ -63,7 +63,7 @@ public:
  * of wxSashWindow.
  */
 
-class WXDLLIMPEXP_ADV wxSashWindow: public wxWindow
+class WXDLLIMPEXP_CORE wxSashWindow: public wxWindow
 {
 public:
     // Default constructor
@@ -181,14 +181,14 @@ private:
     wxCursor*   m_currentCursor;
 
 private:
-    DECLARE_DYNAMIC_CLASS(wxSashWindow)
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_DYNAMIC_CLASS(wxSashWindow);
+    wxDECLARE_EVENT_TABLE();
     wxDECLARE_NO_COPY_CLASS(wxSashWindow);
 };
 
-class WXDLLIMPEXP_FWD_ADV wxSashEvent;
+class WXDLLIMPEXP_FWD_CORE wxSashEvent;
 
-wxDECLARE_EXPORTED_EVENT( WXDLLIMPEXP_ADV, wxEVT_SASH_DRAGGED, wxSashEvent );
+wxDECLARE_EXPORTED_EVENT( WXDLLIMPEXP_CORE, wxEVT_SASH_DRAGGED, wxSashEvent );
 
 enum wxSashDragStatus
 {
@@ -196,7 +196,7 @@ enum wxSashDragStatus
     wxSASH_STATUS_OUT_OF_RANGE
 };
 
-class WXDLLIMPEXP_ADV wxSashEvent: public wxCommandEvent
+class WXDLLIMPEXP_CORE wxSashEvent: public wxCommandEvent
 {
 public:
     wxSashEvent(int id = 0, wxSashEdgePosition edge = wxSASH_NONE)
@@ -224,7 +224,7 @@ public:
     void SetDragStatus(wxSashDragStatus status) { m_dragStatus = status; }
     wxSashDragStatus GetDragStatus() const { return m_dragStatus; }
 
-    virtual wxEvent *Clone() const { return new wxSashEvent(*this); }
+    virtual wxEvent *Clone() const wxOVERRIDE { return new wxSashEvent(*this); }
 
 private:
     wxSashEdgePosition  m_edge;
@@ -232,7 +232,7 @@ private:
     wxSashDragStatus    m_dragStatus;
 
 private:
-    DECLARE_DYNAMIC_CLASS_NO_ASSIGN(wxSashEvent)
+    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN(wxSashEvent);
 };
 
 typedef void (wxEvtHandler::*wxSashEventFunction)(wxSashEvent&);

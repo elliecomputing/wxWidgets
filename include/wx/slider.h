@@ -87,7 +87,7 @@ public:
     virtual int GetThumbLength() const = 0;
 
     // warning: most of subsequent methods are currently only implemented in
-    //          wxMSW under Win95 and are silently ignored on other platforms
+    //          wxMSW and are silently ignored on other platforms
 
     void SetTickFreq(int freq) { DoSetTickFreq(freq); }
     virtual int GetTickFreq() const { return 0; }
@@ -108,7 +108,7 @@ protected:
     virtual void DoSetTickFreq(int WXUNUSED(freq)) { /* unsupported by default */ }
 
     // choose the default border for this window
-    virtual wxBorder GetDefaultBorder() const { return wxBORDER_NONE; }
+    virtual wxBorder GetDefaultBorder() const wxOVERRIDE { return wxBORDER_NONE; }
 
     // adjust value according to wxSL_INVERSE style
     virtual int ValueInvertOrNot(int value) const
@@ -139,10 +139,8 @@ private:
     #include "wx/gtk1/slider.h"
 #elif defined(__WXMAC__)
     #include "wx/osx/slider.h"
-#elif defined(__WXCOCOA__)
-    #include "wx/cocoa/slider.h"
-#elif defined(__WXPM__)
-    #include "wx/os2/slider.h"
+#elif defined(__WXQT__)
+    #include "wx/qt/slider.h"
 #endif
 
 #endif // wxUSE_SLIDER
